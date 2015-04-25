@@ -1,0 +1,23 @@
+// NOTE: modifying the stdlib only takes effect if you delete env.txt.
+
+si-unit meter/meters(m)
+unit inch/inches(in) = 2.54 cm
+unit foot/feet(ft) = 12 in
+unit yard/yards(yd) = 3 ft
+unit mile/miles(mi) = 5280 ft
+
+unit kilogram/kilograms(kg)
+si-unit gram/grams(g) = 0.001 kg
+
+si-unit second/seconds(s)
+unit minute/minutes(min) = 60 seconds
+unit hour/hours(hr) = 60 minutes
+unit day/days(d) = 24 hours
+unit year/years(yr) = 365 days
+unit decade/decades = 10 years
+unit century/centuries = 100 years
+unit millenium/millenia = 1000 years
+
+pi = 3.141592653589793238462643383279
+lightSpeed = 299792458 m/s
+unit lightYear/lightYears = lightSpeed * 1 year
