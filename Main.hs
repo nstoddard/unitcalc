@@ -8,6 +8,9 @@ Add rounding to output so you don't see stuff like this:
 Make it possible to reload the stdlib without deleting env.txt
 Don't automatically convert to base units; keep the original units where possible. E.g. "5 ft * 10 ft" should give an answer in ft^2.
 Find a way to reduce the size of env.txt. The SI prefixes really increase its size.
+Bits, bytes, kibi- and other prefixes
+Allow omitting the leading 0 in ".5"
+Converting to a sum of multiple units (e.g. feet + inches)
 -}
 
 import qualified Data.Map as M

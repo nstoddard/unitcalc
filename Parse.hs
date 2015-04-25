@@ -152,28 +152,21 @@ identifier = backquoteIdentifier <|> (do
 --- Operators
 
 ops = [
-    ["^"],
-    ["*", "/"],
-    ["+", "-"]
+    [("^", AssocRight)],
+    [("*", AssocLeft), ("/", AssocLeft)],
+    [("+", AssocLeft), ("-", AssocLeft)]
     ]
 
-opTable1 = map (concatMap $ op True) ops
-opTable2 = map (concatMap $ op False) ops
+opTable1 = map (map $ op True) ops
+opTable2 = map (map $ op False) ops
 
-op reqSpaces str = [binopL str reqSpaces, binopR str reqSpaces]
-binopL str reqSpaces = Infix (try $ do
+op reqSpaces (str,assoc) = binop str reqSpaces assoc
+binop str reqSpaces = Infix (try $ do
 	when reqSpaces someWhitespace
 	name <- operator str False
 	when reqSpaces someWhitespace
 	pure (\a b -> EApply (EId name) [a, b])
-	) AssocLeft
-binopR str reqSpaces = Infix (try $ do
-	when reqSpaces someWhitespace
-	name <- operator str True
-	when reqSpaces someWhitespace
-    --We swap a and b here intentionally
-	pure (\a b -> EApply (EId name) [b, a])
-	) AssocRight
+	)
 
 operator str rassoc = (do
 	str <- tryString str
