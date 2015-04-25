@@ -42,6 +42,8 @@ pi = 3.141592653589793238462643383279
 lightSpeed = 299792458 m/s
 unit lightYear/lightYears = lightSpeed * 1 year
 
+unit pound/pounds(lb) = 0.45359 kg
+
 unit mph = mi/hr
 unit kph = km/hr
 

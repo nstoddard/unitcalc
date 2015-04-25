@@ -1,5 +1,3 @@
-{-# LANGUAGE NoMonomorphismRestriction, LambdaCase, TupleSections #-}
-
 {- TODO
 Error checking: verify that you can't do something like "unit year/year" with a duplicate string. Also verify that you can't define the same unit more than once
 Numbers in the format "1000.0e-1"
@@ -20,31 +18,24 @@ import Eval
 import Types
 import Parse
 
+stdlibFilename = "stdlib.txt"
+historyFilename = "history.txt"
+envFilename = "env.txt"
 
-dataFile = pure
-{-dataFile filename = if not release then pure filename
-  else (FP.</> filename) <$> getAppUserDataDirectory "calclang"-}
-
-stdlibFilename = dataFile "stdlib.txt"
-historyFilename = dataFile "history.txt"
-envFilename = dataFile "env.txt"
-
-startEnv = Env {envUnits = [], envUnitNames = [], envUnitMap = M.empty, envVars = M.empty}
+emptyEnv = Env {envUnits = [], envUnitNames = [],
+    envUnitMap = M.empty, envVars = M.empty}
 
 main = do
-    envFile <- envFilename
-    stdlibFile <- stdlibFilename
-    exists <- doesFileExist envFile
+    exists <- doesFileExist envFilename
     env <- if exists
-        then Right . read <$> Strict.readFile envFile
-        else runFile stdlibFile startEnv
+        then Right . read <$> Strict.readFile envFilename
+        else runFile stdlibFilename emptyEnv
     case env of
         Left err -> putStrLn err
         Right env -> do
-            historyFile <- historyFilename
-            env' <- runInputT (Settings noCompletion (Just historyFile) True) $ repl env
-            putStrLn $ "Saving file " ++ envFile
-            writeFile envFile (show env')
+            env' <- runInputT (Settings noCompletion (Just historyFilename) True) $ repl env
+            putStrLn $ "Saving file " ++ envFilename
+            writeFile envFilename (show env')
 
 repl :: Env -> InputT IO Env
 repl env = do
@@ -89,11 +80,11 @@ replGetInput cont = do
         input' = case cont of
             Just cont -> cont ++ "\n" ++ input
             Nothing -> input
-    if countBrackets input' > 0 then replGetInput (Just input')
+    if countParens input' > 0 then replGetInput (Just input')
         else pure (Just input')
 
-countBrackets [] = 0
-countBrackets (x:xs)
-    | x `elem` "(" = countBrackets xs + 1
-    | x `elem` ")" = countBrackets xs - 1
-    | otherwise = countBrackets xs
+countParens [] = 0
+countParens (x:xs)
+    | x `elem` "(" = countParens xs + 1
+    | x `elem` ")" = countParens xs - 1
+    | otherwise = countParens xs

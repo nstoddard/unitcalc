@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, LambdaCase, TupleSections #-}
+{-# LANGUAGE TupleSections #-}
 
 module Eval where
 
@@ -82,7 +82,8 @@ evalExpr (EConvert a b) env toBase = do
 evalExpr (EBuiltin str) env toBase = err
     "Trying to evaluate EBuiltin. This is a bug."
 
-
+validUnit :: Units -> Env -> Bool
+validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
 
 toBaseUnits :: UnitList -> UnitMap -> NumUnits -> NumUnits
 toBaseUnits unitList m (n, units) = M.foldl'
@@ -108,7 +109,7 @@ convertUnits unitList m a b
 combineUnits :: Units -> Units -> Units
 combineUnits = M.mergeWithKey (\_ a b -> if a+b==0 then Nothing else Just (a+b)) id id
 
-
+-- Adds SI prefixes
 addSI unitDef
     | unitSI unitDef = unitDef : map addSI' si
     | otherwise = [unitDef] where
@@ -118,38 +119,6 @@ addSI unitDef
         unitAbbr = (shortPrefix++) <$> unitAbbr unitDef,
         unitValue = Just (mul, M.singleton (head $ unitNames unitDef) 1.0)
     }
-
-addUnitDef env unitDef
-    | not (unitExists env unitDef) = env {
-        envUnits = unitDef : envUnits env,
-        envUnitNames = unitNames unitDef ++ F.toList (unitAbbr unitDef) ++ envUnitNames env,
-        envUnitMap = case unitValue unitDef of
-            Nothing -> envUnitMap env
-            Just value -> M.fromList (map (, value) (unitNames unitDef ++ F.toList (unitAbbr unitDef))) `M.union` envUnitMap env
-        }
-    | otherwise = env
-
-unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ F.toList (unitAbbr unitDef))
-
-validUnit :: Units -> Env -> Bool
-validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
-
-applyBuiltin :: String -> [Expr] -> ErrorM Expr
-applyBuiltin "+" [ENum a aUnits, ENum b bUnits]
-    | aUnits == bUnits = pure (ENum (a+b) aUnits)
-    | otherwise = err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits, ENum b bUnits]
-    | aUnits == bUnits = pure (ENum (a-b) aUnits)
-    | otherwise = err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits] = pure (ENum (-a) aUnits)
-applyBuiltin "*" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a*b) (combineUnits aUnits bUnits)
-applyBuiltin "/" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
-applyBuiltin "^" [ENum a aUnits, ENum b bUnits]
-    | M.null bUnits = pure $ ENum (a**b) (M.map (*b) aUnits)
-    | otherwise = err "Invalid use of ^"
-applyBuiltin f _ = err $ "Invalid call to builtin function " ++
-    prettyPrint f
-
 
 si = [
     ("yotta", "Y", 1000**8),
@@ -174,6 +143,37 @@ si = [
     ("zepto", "z", 1000**(-7)),
     ("yocto", "y", 1000**(-8))
     ]
+
+
+addUnitDef env unitDef
+    | not (unitExists env unitDef) = env {
+        envUnits = unitDef : envUnits env,
+        envUnitNames = unitNames unitDef ++ F.toList (unitAbbr unitDef) ++ envUnitNames env,
+        envUnitMap = case unitValue unitDef of
+            Nothing -> envUnitMap env
+            Just value -> M.fromList (map (, value) (unitNames unitDef ++ F.toList (unitAbbr unitDef))) `M.union` envUnitMap env
+        }
+    | otherwise = env
+
+unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ F.toList (unitAbbr unitDef))
+
+
+-- Built-in functions and operators
+applyBuiltin :: String -> [Expr] -> ErrorM Expr
+applyBuiltin "+" [ENum a aUnits, ENum b bUnits]
+    | aUnits == bUnits = pure (ENum (a+b) aUnits)
+    | otherwise = err "Incompatible units"
+applyBuiltin "-" [ENum a aUnits, ENum b bUnits]
+    | aUnits == bUnits = pure (ENum (a-b) aUnits)
+    | otherwise = err "Incompatible units"
+applyBuiltin "-" [ENum a aUnits] = pure (ENum (-a) aUnits)
+applyBuiltin "*" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a*b) (combineUnits aUnits bUnits)
+applyBuiltin "/" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
+applyBuiltin "^" [ENum a aUnits, ENum b bUnits]
+    | M.null bUnits = pure $ ENum (a**b) (M.map (*b) aUnits)
+    | otherwise = err "Invalid use of ^"
+applyBuiltin f _ = err $ "Invalid call to builtin function " ++
+    prettyPrint f
 
 -- TODO: find a way to automatically generate this
 builtins = ["+", "-", "*", "/", "^"]

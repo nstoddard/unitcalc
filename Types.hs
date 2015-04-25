@@ -13,10 +13,14 @@ import Text.PrettyPrint.Leijen ((<//>), (</>), Pretty, pretty, displayS, renderP
 type Power = Double
 type Unit = String
 type Units = Map Unit Power
-type NumUnits = (Double, Units)
+type NumUnits = (Double, Units) -- A number, with units
 
-data Expr = ENum Double Units | EApply Expr [Expr] | EId String |
-    EBuiltin String | EConvert Expr Expr
+data Expr =
+    ENum Double Units | -- A number, with units
+    EApply Expr [Expr] | -- Application of a function or operator
+    EId String | -- An identifier
+    EBuiltin String | -- A built-in function/operator
+    EConvert Expr Expr -- A conversion between units
     deriving (Show)
 
 data UnitDef = UnitDef {
@@ -30,9 +34,6 @@ data UnitDef = UnitDef {
 data Stmt = SUnitDef Bool [String] (Maybe String) (Maybe Expr) | SExpr Expr | SDef String Expr
     deriving (Show)
 
-type UnitList = [UnitDef]
-type UnitMap = Map String NumUnits
-
 type ErrorM t = Either String t
 err = Left
 
@@ -43,6 +44,11 @@ data Env = Env {
     envVars :: Map String NumUnits
 } deriving (Show, Read)
 
+type UnitList = [UnitDef]
+type UnitMap = Map String NumUnits
+
+
+--- Pretty printing
 
 outputToString doc = displayS (renderPretty 1.0 72 doc) ""
 prettyPrint :: Pretty a => a -> String
@@ -59,7 +65,7 @@ prettyUnit (unit, 1) = pretty unit
 prettyUnit (unit, n) = pretty unit <//> pretty "^" <//> pretty n
 
 prettyUnits units
-    | length pos > 0 && length neg == 1 = P.hsep (map prettyUnit pos) <//>
+    | not (null pos) && length neg == 1 = P.hsep (map prettyUnit pos) <//>
         pretty "/" <//> prettyUnit (second negate $ head neg)
     | otherwise = P.hsep (map prettyUnit units)
     where
@@ -69,5 +75,3 @@ instance Pretty Units where
     pretty units
         | M.null units = pretty "(unitless)"
         | otherwise = prettyUnits (M.toList units)
-
-
