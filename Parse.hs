@@ -54,7 +54,7 @@ parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseExpr)
 
 
 operatorChars = "/<>?:\\|~!@#$%^&*+-="
-reservedOps = ["//", "/*", "*/"]
+reservedOps = [commentLine, commentStart, commentEnd]
 keywords = ["unit", "si-unit"]
 
 
@@ -74,10 +74,12 @@ a </ b = a <* whitespace <* b
 a </> b = a <*> (whitespace *> b)
 
 skipWhitespace :: String -> Parsec String () ()
-skipWhitespace chars = skipMany (void (oneOf chars) <|> oneLineComment <|> multiLineComment <|> void (string "\\\n")) <?> "whitespace"
+skipWhitespace chars = skipMany (void (oneOf chars) <|> oneLineComment <|>
+    multiLineComment <|> void (string "\\\n")) <?> "whitespace"
 
 skipReqWhitespace :: String -> Parsec String () ()
-skipReqWhitespace chars = skipSome (void (oneOf chars) <|> oneLineComment <|> multiLineComment <|> void (string "\\\n")) <?> "whitespace"
+skipReqWhitespace chars = skipSome (void (oneOf chars) <|> oneLineComment <|>
+    multiLineComment <|> void (string "\\\n")) <?> "whitespace"
 
 commentLine = "//"
 commentStart = "/*"
@@ -118,10 +120,9 @@ fractExponent n = fractExponent' <|> exponentOnly where
 exponent' = do
 	oneOf "eE"
 	power <$> decimal
-	where
-		power e
-			| e < 0 = 1.0/power(-e)
-			| otherwise = fromInteger (10^e)
+	where power e
+		| e < 0 = 1.0/power(-e)
+		| otherwise = fromInteger (10^e)
 
 fraction = do
 	char '.'
@@ -179,7 +180,6 @@ operator str rassoc = (do
 	if rassoc /= (last str == ':') || str `elem` reservedOps then mzero
         else pure str
 	) <?> "operator"
-
 
 prefixOperator = (do
 	val <- some $ satisfy (`elem` operatorChars)

@@ -37,15 +37,23 @@ si-unit siemens(S) = A/V
 si-unit weber/webers(Wb) = V*s
 si-unit tesla/teslas(T) = Wb/m^2
 si-unit henry/henries(H) = Wb/A
-
 pi = 3.141592653589793238462643383279
 lightSpeed = 299792458 m/s
 unit lightYear/lightYears = lightSpeed * 1 year
+si-unit parsec/parsecs(pc) = 3.0857*10^16 m
+unit astronomicalUnit/astronomicalUnits(AU) = 1.4960*10^11 m
 
 unit pound/pounds(lb) = 0.45359 kg
 
 unit mph = mi/hr
 unit kph = km/hr
+
+unit acre/acres = 43560 ft^2
+si-unit hectare/hectares(ha) = 10000 m^2
+
+si-unit liter/litre/liters/litres(L) = 1 dm^3
+
+si-unit electronvolt/electronvolts(eV) = 1.6*10^(-19) J
 
 earthGravity = 9.8 m/s^2
 

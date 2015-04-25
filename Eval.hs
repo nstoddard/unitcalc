@@ -64,7 +64,7 @@ evalExpr (EId str) env toBase
                 (1.0, M.singleton str 1.0)
             else (1.0, M.singleton str 1.0) in
         pure (ENum num units)
-    | otherwise = err $ "Unknown identifier: " ++ str ++ "."
+    | otherwise = err $ "Unknown identifier or unit: " ++ str ++ "."
 evalExpr (EConvert a b) env toBase = do
     a' <- evalExpr a env toBase
     b' <- evalExpr b env False
