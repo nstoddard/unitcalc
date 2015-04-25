@@ -18,7 +18,7 @@ parseInput srcName input parser = case parse (parseWholeInput parser) srcName in
 		Right expr -> pure expr
 
 
-parseStmts = many newline *> many (parseStmt <* many newline)
+parseStmts = anyWhitespace *> many (parseStmt <* anyWhitespace)
 
 parseStmt :: Parsec String () Stmt
 parseStmt = parseUnitDef <|> try parseDef <|> (SExpr <$> parseExpr)
@@ -48,16 +48,13 @@ parseExpr'' = buildExpressionParser opTable2 parseSingleTokenExpr
 parseSingleTokenExpr = parseParens <|> parseNum <|> parseId
 parseParens = char '(' /> parseExpr </ char ')'
 parseId = EId <$> identifier
-parseNum = ENum <$> parseNum' <*> pure M.empty
+parseNum = ENum <$> (float <|> fromIntegral <$> decimal) <*> pure M.empty
 parseApply = EApply <$> parseExpr'' <*> some (try $ whitespace *> parseExpr'')
 parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseExpr)
 
 
-parseNum' = float <|> fromIntegral <$> decimal
-
-
 operatorChars = "/<>?:\\|~!@#$%^&*+-="
-reservedOps = []
+reservedOps = ["//", "/*", "*/"]
 keywords = ["unit", "si-unit"]
 
 
@@ -65,21 +62,16 @@ keywords = ["unit", "si-unit"]
 --- Lower-level combinators
 
 tryString = try . string
-parseWholeInput parser = inWhitespace parser <* eof
+parseWholeInput parser = parser <* eof
 
 whitespace = skipWhitespace " \t"
-anyWhitespace = skipWhitespace spaceChars
+anyWhitespace = skipWhitespace " \t\n"
 someWhitespace = skipReqWhitespace " \t"
-
-inWhitespace = between whitespace whitespace
-inAnyWhitespace = between anyWhitespace anyWhitespace
 
 infixl 4 </>, />, </
 a /> b = a *> whitespace *> b
 a </ b = a <* whitespace <* b
 a </> b = a <*> (whitespace *> b)
-
-spaceChars = " \t\n"
 
 skipWhitespace :: String -> Parsec String () ()
 skipWhitespace chars = skipMany (void (oneOf chars) <|> oneLineComment <|> multiLineComment <|> void (string "\\\n")) <?> "whitespace"
@@ -154,26 +146,19 @@ identifier = backquoteIdentifier <|> (do
 	val <- (:) <$> identStart <*> many identChar
 	if val `elem` keywords then mzero else pure val) <?> "identifier"
 
-newline = char '\n' <?> "newline"
 
 
 
 --- Operators
 
-ops1 = [
+ops = [
     ["^"],
     ["*", "/"],
     ["+", "-"]
     ]
-ops2 = [
-    ["/"], -- This is here so fractions work as expected
-    ["^"],
-    ["*"],
-    ["+", "-"]
-    ]
 
-opTable1 = map (concatMap $ op True) ops1
-opTable2 = map (concatMap $ op False) ops2
+opTable1 = map (concatMap $ op True) ops
+opTable2 = map (concatMap $ op False) ops
 
 op reqSpaces str = [binopL str reqSpaces, binopR str reqSpaces]
 binopL str reqSpaces = Infix (try $ do

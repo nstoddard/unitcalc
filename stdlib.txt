@@ -1,13 +1,11 @@
 // NOTE: modifying the stdlib only takes effect if you delete env.txt.
 
+// The si- prefix automatically generates prefixes like kilo-
 si-unit meter/meters(m)
 unit inch/inches(in) = 2.54 cm
 unit foot/feet(ft) = 12 in
 unit yard/yards(yd) = 3 ft
 unit mile/miles(mi) = 5280 ft
-
-unit kilogram/kilograms(kg)
-si-unit gram/grams(g) = 0.001 kg
 
 si-unit second/seconds(s)
 unit minute/minutes(min) = 60 seconds
@@ -18,6 +16,37 @@ unit decade/decades = 10 years
 unit century/centuries = 100 years
 unit millenium/millenia = 1000 years
 
+/* The kilogram is defined separately b/c it's technically an SI base unit,
+   not the gram */
+unit kilogram/kilograms(kg)
+si-unit gram/grams(g) = 0.001 kg
+
+si-unit ampere/amperes(A)
+si-unit mole/moles(mol)
+si-unit candela/candelas(cd)
+si-unit hertz(Hz) = 1/s
+si-unit newton/newtons(N) = kg*m/s^2
+si-unit pascal/pascals(Pa) = N/m^2
+si-unit joule/joules(J) = N*m
+si-unit watt/watts(W) = J/s
+si-unit coulomb/coulombs(C) = s*A
+si-unit volt/volts(V) = W/A
+si-unit farad/farads(F) = C/V
+si-unit ohm/ohms = V/A
+si-unit siemens(S) = A/V
+si-unit weber/webers(Wb) = V*s
+si-unit tesla/teslas(T) = Wb/m^2
+si-unit henry/henries(H) = Wb/A
+
 pi = 3.141592653589793238462643383279
 lightSpeed = 299792458 m/s
 unit lightYear/lightYears = lightSpeed * 1 year
+
+unit mph = mi/hr
+unit kph = km/hr
+
+earthGravity = 9.8 m/s^2
+
+
+/* I don't include temperature units because conversions between then require
+   additions, not just multiplications, which isn't supported yet. */

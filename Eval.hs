@@ -24,7 +24,7 @@ evalStmt :: Stmt -> Env -> ErrorM (Maybe Expr, Env)
 evalStmt (SUnitDef si names abbr expr) env = do
     val <- case expr of
         Nothing -> pure Nothing
-        Just expr -> Just <$> evalExpr expr env
+        Just expr -> Just <$> evalExpr expr env True
     val' <- case val of
         Just (ENum num units) -> pure $ Just (num, units)
         Nothing -> pure Nothing
@@ -34,48 +34,52 @@ evalStmt (SUnitDef si names abbr expr) env = do
             unitNames = names, unitAbbr = abbr, unitValue = val'}
     pure (Nothing, foldl' addUnitDef env (addSI unitDef))
 evalStmt (SDef id val) env = do
-    val' <- evalExpr val env
+    val' <- evalExpr val env True
     case val' of
         ENum num units -> pure (Just val', env {
             envVars = M.insert id (num,units) (envVars env)
         })
         x -> err $ "Can't define a variable with the value " ++ prettyPrint x
 evalStmt (SExpr expr) env = do
-    res <- evalExpr expr env
+    res <- evalExpr expr env True
     pure (Just res, env)
 
 
-evalExpr :: Expr -> Env -> ErrorM Expr
-evalExpr x@(ENum {}) env = pure x
-evalExpr (EApply fn args) env = do
-    fn' <- evalExpr fn env
-    args' <- mapM (`evalExpr` env) args
+evalExpr :: Expr -> Env -> Bool -> ErrorM Expr
+evalExpr x@(ENum {}) env toBase = pure x
+evalExpr (EApply fn args) env toBase = do
+    fn' <- evalExpr fn env toBase
+    args' <- mapM (\x -> evalExpr x env toBase) args
     case fn' of
         EBuiltin str -> applyBuiltin str args'
         n@(ENum {}) -> foldM (\a b -> applyBuiltin "*" [a,b]) n args'
         x -> err $ "Trying to treat " ++ prettyPrint x ++ " as a function."
-evalExpr (EId str) env
+evalExpr (EId str) env toBase
     | str `elem` builtins = pure (EBuiltin str)
     | str `M.member` envVars env = let (num,units) = envVars env M.! str in
       pure (ENum num units)
-    | str `elem` envUnitNames env = let (num,units) = toBaseUnits (envUnits env) (envUnitMap env) (1.0, M.singleton str 1.0) in
+    | str `elem` envUnitNames env = let
+        (num,units) = if toBase
+            then toBaseUnits (envUnits env) (envUnitMap env)
+                (1.0, M.singleton str 1.0)
+            else (1.0, M.singleton str 1.0) in
         pure (ENum num units)
     | otherwise = err $ "Unknown identifier: " ++ str ++ "."
-evalExpr (EConvert a b) env = do
-    a' <- evalExpr a env
-    b' <- evalExpr b env
+evalExpr (EConvert a b) env toBase = do
+    a' <- evalExpr a env toBase
+    b' <- evalExpr b env False
     b' <- case b' of
-        ENum 1.0 units -> pure units
+        ENum num units -> pure (num, units)
         x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
-    case (a', validUnit b' env) of
+    case (a', validUnit (snd b') env) of
         (ENum num units, True) -> do
-            (num',units') <- convertUnits (envUnits env) (envUnitMap env) (num, units) b'
+            (num',units') <- convertUnits (envUnits env) (envUnitMap env) (num/fst b', units) (snd b')
             pure (ENum num' units')
         (ENum num units, False) -> err $
             "Invalid unit in convesion: " ++ prettyPrint b ++"."
         (x, _) -> err $
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
-evalExpr (EBuiltin str) env = err
+evalExpr (EBuiltin str) env toBase = err
     "Trying to evaluate EBuiltin. This is a bug."
 
 

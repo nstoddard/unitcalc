@@ -1,9 +1,9 @@
 {-# LANGUAGE NoMonomorphismRestriction, LambdaCase, TupleSections #-}
 
 {- TODO
-Error checking: verify that you can't do "unit year/year" with a duplicate string. Also verify that you can't define the same unit more than once
-Suppport more syntax in unit conversions, e.g. "-> m/s", "-> m*s^-1", and also units like "unit test = 5/2 m"
+Error checking: verify that you can't do something like "unit year/year" with a duplicate string. Also verify that you can't define the same unit more than once
 Numbers in the format "1000.0e-1"
+Support the syntax "5^-1"
 -}
 
 import qualified Data.Map as M
@@ -39,10 +39,11 @@ main = do
         then Right . read <$> Strict.readFile envFile
         else runFile stdlibFile startEnv
     case env of
-        Left err -> putStrLn $ "Error in stdlib: " ++ show err
+        Left err -> putStrLn err
         Right env -> do
             historyFile <- historyFilename
             env' <- runInputT (Settings noCompletion (Just historyFile) True) $ repl env
+            putStrLn $ "Saving file " ++ envFile
             writeFile envFile (show env')
 
 repl :: Env -> InputT IO Env
