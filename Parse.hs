@@ -5,7 +5,6 @@ import Control.Applicative
 import Control.Monad
 import Data.Char
 import Data.List
-import Data.Maybe
 
 import Text.Parsec hiding ((<|>), many, optional, State, newline)
 import Text.Parsec.Expr
@@ -33,23 +32,6 @@ parseUnitDef = do
     value <- option Nothing $ Just <$> (char '=' /> parseExpr <* whitespace)
     pure $ SUnitDef si names abbr value
 parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
-
-{-parseValue = do
-    num <- option Nothing (Just <$> parseNum')
-    units <- option Nothing (Just <$> parseUnits)
-    if isNothing num && isNothing units then mzero else do
-    let
-        num' = case num of
-            Nothing -> 1.0
-            Just num -> num
-        units' = case units of
-            Nothing -> M.empty
-            Just units -> units
-    pure (num', units')
-
-parseUnits = M.fromList <$> sepBy1 (whitespace *> parseValueUnit)
-    (whitespace *> optional (char '*') <* whitespace)
-parseValueUnit = (,) <$> identifier <*> option 1.0 (char '^' *> parseNum')-}
 
 
 parseExpr :: Parsec String () Expr

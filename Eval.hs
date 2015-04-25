@@ -60,7 +60,7 @@ evalExpr (EId str) env
       pure (ENum num units)
     | str `elem` envUnitNames env = let (num,units) = toBaseUnits (envUnits env) (envUnitMap env) (1.0, M.singleton str 1.0) in
         pure (ENum num units)
-    | True = err $ "Unknown identifier: " ++ str ++ "."
+    | otherwise = err $ "Unknown identifier: " ++ str ++ "."
 evalExpr (EConvert a b) env = do
     a' <- evalExpr a env
     b' <- evalExpr b env
@@ -94,7 +94,7 @@ toBaseUnits unitList m (n, units) = M.foldl'
 convertUnits :: UnitList -> UnitMap -> NumUnits -> Units -> ErrorM NumUnits
 convertUnits unitList m a b
     | aUnits == bUnits = pure (aRes*bRes', b)
-    | True = err $ "Invalid unit conversion from " ++ prettyPrint aUnits ++
+    | otherwise = err $ "Invalid unit conversion from " ++ prettyPrint aUnits ++
         " to " ++ prettyPrint b ++ "."
     where
     (aRes, aUnits) = toBaseUnits unitList m a
@@ -106,8 +106,8 @@ combineUnits = M.mergeWithKey (\_ a b -> if a+b==0 then Nothing else Just (a+b))
 
 
 addSI unitDef
-    | unitSI unitDef == True = unitDef : map addSI' si
-    | True = [unitDef] where
+    | unitSI unitDef = unitDef : map addSI' si
+    | otherwise = [unitDef] where
     addSI' (prefix, shortPrefix, mul) = UnitDef {
         unitSI = False,
         unitNames = (prefix++) <$> unitNames unitDef,
@@ -123,7 +123,7 @@ addUnitDef env unitDef
             Nothing -> envUnitMap env
             Just value -> M.fromList (map (, value) (unitNames unitDef ++ F.toList (unitAbbr unitDef))) `M.union` envUnitMap env
         }
-    | True = env
+    | otherwise = env
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ F.toList (unitAbbr unitDef))
 
@@ -133,16 +133,16 @@ validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
 applyBuiltin :: String -> [Expr] -> ErrorM Expr
 applyBuiltin "+" [ENum a aUnits, ENum b bUnits]
     | aUnits == bUnits = pure (ENum (a+b) aUnits)
-    | True = err "Incompatible units"
+    | otherwise = err "Incompatible units"
 applyBuiltin "-" [ENum a aUnits, ENum b bUnits]
     | aUnits == bUnits = pure (ENum (a-b) aUnits)
-    | True = err "Incompatible units"
+    | otherwise = err "Incompatible units"
 applyBuiltin "-" [ENum a aUnits] = pure (ENum (-a) aUnits)
 applyBuiltin "*" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a*b) (combineUnits aUnits bUnits)
 applyBuiltin "/" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
 applyBuiltin "^" [ENum a aUnits, ENum b bUnits]
     | M.null bUnits = pure $ ENum (a**b) (M.map (*b) aUnits)
-    | True = err "Invalid use of ^"
+    | otherwise = err "Invalid use of ^"
 applyBuiltin f _ = err $ "Invalid call to builtin function " ++
     prettyPrint f
 

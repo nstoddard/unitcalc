@@ -50,7 +50,7 @@ prettyPrint = outputToString . pretty
 instance Pretty Expr where
     pretty (ENum num units)
         | units == M.empty = pretty num
-        | True = pretty num </> P.hsep (map prettyUnit $ M.toList units)
+        | otherwise = pretty num </> P.hsep (map prettyUnit $ M.toList units)
     -- This should never happen
     pretty x = pretty (show x)
 

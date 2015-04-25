@@ -54,12 +54,11 @@ repl env = do
             let stmt = parseInput "" input parseStmt
             case stmt of
                 Left err -> lift (putStrLn err) >> repl env
-                Right stmt -> do
-                    case evalStmt stmt env of
-                        Left err -> lift (putStrLn err) >> repl env
-                        Right (res, env') -> do
-                            lift $ putStrLn (prettyPrint res)
-                            repl env'
+                Right stmt -> case evalStmt stmt env of
+                    Left err -> lift (putStrLn err) >> repl env
+                    Right (res, env') -> do
+                        lift $ putStrLn (prettyPrint res)
+                        repl env'
 
 
 runFile :: String -> Env -> IO (ErrorM Env)
@@ -96,4 +95,4 @@ countBrackets [] = 0
 countBrackets (x:xs)
     | x `elem` "(" = countBrackets xs + 1
     | x `elem` ")" = countBrackets xs - 1
-    | True = countBrackets xs
+    | otherwise = countBrackets xs
