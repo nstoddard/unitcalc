@@ -1,16 +1,19 @@
 {- TODO
-Error checking: verify that you can't do something like "unit year/year" with a duplicate string. Also verify that you can't define the same unit more than once
+Error checking: verify that you can't do something like "unit year/year" with a duplicate string.
+    Also verify that you can't define the same unit more than once
 Support numbers in the format "1000.0e-1"
 Support the syntax "5^-1"
 Add rounding to output so you don't see stuff like this:
     > parsec -> lightYear
     3.2599999999999993 lightYear
 Make it possible to reload the stdlib without deleting env.txt
-Don't automatically convert to base units; keep the original units where possible. E.g. "5 ft * 10 ft" should give an answer in ft^2.
+Don't automatically convert to base units; keep the original units where possible.
+    E.g. "5 ft * 10 ft" should give an answer in ft^2.
 Find a way to reduce the size of env.txt. The SI prefixes really increase its size.
 Bits, bytes, kibi- and other prefixes
 Allow omitting the leading 0 in ".5"
 Converting to a sum of multiple units (e.g. feet + inches)
+Use Cabal
 -}
 
 import qualified Data.Map as M
