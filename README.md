@@ -29,5 +29,36 @@ It also supports variables:
 0.29979245800000004 meter
 ```
 
+The standard library currently includes definitions of most SI units and a few others.
 
-Currently includes definitions of most SI units and a few others.
+Units and variables defined in the REPL are automatically saved. Files are also supported (through the `load` command), but the REPL is the primary interface.
+
+
+## Commands
+
+These can only be used in the REPL, not in a file.
+
+`exit`  
+Self-explanatory.
+
+`> load <filename>`  
+Loads the file and runs every line in it.
+
+`> reset`  
+Resets the environment to the default, deleting all units and variables that have been defined, except for those in the standard library.
+
+
+### Notes
+
+Operator precedence is a bit strange compared to most languages. It matters whether there's spaces around an operator. For example:
+
+```
+> 2 + 3 * 4
+14.0
+> 2+3 * 4
+20.0
+```
+
+There's two commands for defining units: `unit` and `si-unit`. They have the same syntax, but the difference is that `si-unit` automatically generates versions of the unit with SI prefixes. For instance, `unit meter/meters(m)` will automatically define the units `centimeter`, `cm`, `kilometer`, `km`, etc.
+
+Units and variables are case-sensitive. For instance, `5 KM` won't work.

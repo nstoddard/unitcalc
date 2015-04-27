@@ -17,6 +17,8 @@ Use Cabal
 Treat "0" the same as "0 meters" etc
 Ban things like "10 m -> 10 m" which doesn't make any sense.
 Clean up the code
+Command-line options?
+Add a 'help' command
 -}
 
 import qualified Data.Map as M
@@ -27,6 +29,10 @@ import System.Directory
 import Control.Exception
 import qualified System.IO.Strict as Strict
 import qualified System.FilePath as FP
+import Data.Version
+
+import qualified Text.PrettyPrint.Leijen as P
+import Text.PrettyPrint.Leijen ((<//>), (</>), Pretty, pretty, displayS, renderPretty)
 
 import System.Console.Haskeline as H
 
@@ -35,6 +41,7 @@ import Paths_unitcalc
 import Eval
 import Types
 import Parse
+import Util
 
 dataDir = getAppUserDataDirectory "unitcalc"
 dataFile filename = (FP.</> filename) <$> dataDir
@@ -47,7 +54,7 @@ emptyEnv = Env {envUnits = [], envUnitNames = [],
     envUnitMap = M.empty, envVars = M.empty}
 
 main = do
-    putStrLn "unitcalc 0.1, by Nathan Stoddard"
+    putStrLn $ "unitcalc " ++ showVersion version ++ ", by Nathan Stoddard"
     createDirectoryIfMissing False =<< dataDir
     stdlibFilename <- stdlibLoc
     historyFilename <- historyLoc
@@ -55,13 +62,18 @@ main = do
     exists <- doesFileExist envFilename
     env <- if exists
         then Right . read <$> Strict.readFile envFilename
-        else runFile stdlibFilename emptyEnv
+        else loadFile stdlibFilename emptyEnv
     case env of
         Left err -> putStrLn err
         Right env -> do
             env' <- runInputT (Settings noCompletion (Just historyFilename) True) $ repl env
             putStrLn $ "Saving file " ++ envFilename
             writeFile envFilename (show env')
+
+
+-- Pretty-prints a string by splitting it into words so they can be properly 
+-- split across lines
+prettyString = P.fillSep . map pretty . words
 
 repl :: Env -> InputT IO Env
 repl env = do
@@ -72,26 +84,28 @@ repl env = do
             let stmt = parseInput "" input parseReplCmd
             case stmt of
                 Left err -> lift (putStrLn err) >> repl env
-                Right (RLoad path) -> do
-                    exists <- lift $ doesFileExist path
-                    if exists
+                Right (RLoad path) -> loadFileRepl path env
+                Right RReset -> do
+                    doIt <- lift $ yesno $ prettyPrint $ prettyString "Really reset the environment? This will delete every unit and variable except those in the standard library." P.</> pretty "[enter Y or N]  > "
+                    if doIt
                         then do
-                            env' <- lift $ runFile path env
-                            case env' of
-                                Left err -> lift (putStrLn err) >> repl env
-                                Right env' -> repl env'
-                        else do
-                            lift $ putStrLn "File doesn't exist."
-                            repl env
+                            stdlibFilename <- lift stdlibLoc
+                            loadFileRepl stdlibFilename emptyEnv
+                        else repl env
                 Right (RStmt stmt) -> case evalStmt stmt env of
                     Left err -> lift (putStrLn err) >> repl env
                     Right (res, env') -> do
                         lift $ putStrLn (prettyPrint res)
                         repl env'
 
+loadFileRepl path env = do
+    env' <- lift $ loadFile path env
+    case env' of
+        Left err -> lift (putStrLn err) >> repl env
+        Right env' -> repl env'
 
-runFile :: String -> Env -> IO (ErrorM Env)
-runFile filename env = do
+loadFile :: String -> Env -> IO (ErrorM Env)
+loadFile filename env = do
     exists <- doesFileExist filename
     if not exists then pure (Left $ "File doesn't exist: " ++ filename) else do
     input <- Strict.readFile filename

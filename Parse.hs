@@ -12,8 +12,9 @@ import Text.Parsec.Expr
 import Types
 
 
-parseReplCmd = whitespace *> (parseLoad <|> (RStmt <$> parseStmt)) <* whitespace
+parseReplCmd = whitespace *> (parseLoad <|> parseReset <|> (RStmt <$> parseStmt)) <* whitespace
 parseLoad = RLoad <$> (tryString "load" /> some (satisfy (not . isSpace)))
+parseReset = tryString "reset" *> pure RReset
 
 
 parseInput :: String -> String -> Parsec String () a -> ErrorM a
