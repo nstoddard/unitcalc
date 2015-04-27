@@ -2,23 +2,24 @@
 Error checking: verify that you can't do something like "unit year/year" with a duplicate string.
     Also verify that you can't define the same unit more than once
 Support numbers in the format "1000.0e-1"
-Support the syntax "5^-1"
+Support the syntax "5^-1".
 Add rounding to output so you don't see stuff like this:
     > parsec -> lightYear
     3.2599999999999993 lightYear
-Make it possible to reload the stdlib without deleting env.txt
+Make it possible to reload the stdlib without resetting everything.
 Don't automatically convert to base units; keep the original units where possible.
     E.g. "5 ft * 10 ft" should give an answer in ft^2.
-Find a way to reduce the size of env.txt. The SI prefixes really increase its size.
+Find a way to reduce the size of env.txt. The SI prefixes really increase its size. There's a lot of duplicate information as well.
 Bits, bytes, kibi- and other prefixes
 Allow omitting the leading 0 in ".5"
 Converting to a sum of multiple units (e.g. feet + inches)
-Use Cabal
 Treat "0" the same as "0 meters" etc
 Ban things like "10 m -> 10 m" which doesn't make any sense.
 Clean up the code
 Command-line options?
 Add a 'help' command
+Release executables
+Put on Hackage?
 -}
 
 import qualified Data.Map as M
@@ -86,7 +87,7 @@ repl env = do
                 Left err -> lift (putStrLn err) >> repl env
                 Right (RLoad path) -> loadFileRepl path env
                 Right RReset -> do
-                    doIt <- lift $ yesno $ prettyPrint $ prettyString "Really reset the environment? This will delete every unit and variable except those in the standard library." P.</> pretty "[enter Y or N]  > "
+                    doIt <- lift $ yesno $ prettyPrint $ prettyString "Really reset the environment? This will delete all units and variables except those in the standard library." P.</> pretty "[enter Y or N]  > "
                     if doIt
                         then do
                             stdlibFilename <- lift stdlibLoc

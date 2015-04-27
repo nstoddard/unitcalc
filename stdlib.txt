@@ -1,4 +1,4 @@
-// NOTE: modifying the stdlib only takes effect if you delete env.txt.
+// NOTE: modifying the stdlib only takes effect if you run the `reset` command.
 
 // The si- prefix automatically generates prefixes like kilo-
 si-unit meter/meters(m)
@@ -17,7 +17,7 @@ unit century/centuries = 100 years
 unit millenium/millenia = 1000 years
 
 /* The kilogram is defined separately b/c it's technically an SI base unit,
-   not the gram */
+   not the gram. */
 unit kilogram/kilograms(kg)
 si-unit gram/grams(g) = 0.001 kg
 
@@ -59,6 +59,6 @@ earthGravity = 9.8 m/s^2
 
 pi = 3.141592653589793238462643383279
 
-/* This doesn't include temperature units because conversions between
-   them require addition, not just multiplication, which isn't supported yet. 
+/* This file doesn't include temperature units because conversions between
+   them require addition, which isn't supported in unit conversions.
 */

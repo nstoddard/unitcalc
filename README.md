@@ -1,6 +1,8 @@
 # unitcalc
 A calculator supporting units of measurement, written in Haskell.
 
+Run it by installing the [Haskell Platform](https://www.haskell.org/platform/), cloning this repo, and running `cabal run`.
+
 It can do conversions between units of measurement:
 ```
 > 60 mph -> m/s
@@ -38,14 +40,14 @@ Units and variables defined in the REPL are automatically saved. Files are also 
 
 These can only be used in the REPL, not in a file.
 
-`exit`  
+`> exit`  
 Self-explanatory.
 
 `> load <filename>`  
 Loads the file and runs every line in it.
 
 `> reset`  
-Resets the environment to the default, deleting all units and variables that have been defined, except for those in the standard library.
+Resets the environment, deleting all units and variables that have been defined, except for those in the standard library.
 
 
 ### Notes
