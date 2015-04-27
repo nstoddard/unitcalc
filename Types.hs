@@ -31,6 +31,8 @@ data UnitDef = UnitDef {
     unitValue :: Maybe NumUnits
 } deriving (Show, Read)
 
+data ReplCmd = RStmt Stmt | RLoad String
+
 data Stmt = SUnitDef Bool [String] (Maybe String) (Maybe Expr) | SExpr Expr | SDef String Expr
     deriving (Show)
 

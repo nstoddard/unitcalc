@@ -88,23 +88,22 @@ validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
 toBaseUnits :: UnitList -> UnitMap -> NumUnits -> NumUnits
 toBaseUnits unitList m (n, units) = M.foldl'
     (\(aN, aUnits) (bN, bUnits) -> (aN*bN, combineUnits aUnits bUnits))
-    (n, M.empty) (M.mapWithKey (toBaseUnits' m) units) where
-        toBaseUnits' :: UnitMap -> Unit -> Power -> NumUnits
-        toBaseUnits' m unit power = case M.lookup unit m of
-            Nothing -> (1.0, M.singleton unit' power) where
-                unit' = head . unitNames $ fromJust
-                    (find (\x -> unit `elem` unitNames x || Just unit == unitAbbr x) unitList)
-            Just res -> toBaseUnits unitList m (((**power) *** M.map (*power)) res)
+    (n, M.empty) (M.mapWithKey toBaseUnits' units) where
+    toBaseUnits' :: Unit -> Power -> NumUnits
+    toBaseUnits' unit power = case M.lookup unit m of
+        Nothing -> (1.0, M.singleton unit' power) where
+            unit' = head . unitNames $ fromJust
+                (find (\x -> unit `elem` unitNames x || Just unit == unitAbbr x) unitList)
+        Just res -> toBaseUnits unitList m (((**power) *** M.map (*power)) res)
 
 convertUnits :: UnitList -> UnitMap -> NumUnits -> Units -> ErrorM NumUnits
 convertUnits unitList m a b
-    | aUnits == bUnits = pure (aRes*bRes', b)
-    | otherwise = err $ "Invalid unit conversion from " ++ prettyPrint aUnits ++
-        " to " ++ prettyPrint b ++ "."
+    | aUnits == bUnits = pure (aRes*recip bRes, b)
+    | otherwise = err $ "Invalid unit conversion from " ++
+        prettyPrint aUnits ++ " to " ++ prettyPrint b ++ "."
     where
     (aRes, aUnits) = toBaseUnits unitList m a
     (bRes, bUnits) = toBaseUnits unitList m (1.0, b)
-    (bRes', bUnits') = (recip bRes, M.map negate bUnits)
 
 combineUnits :: Units -> Units -> Units
 combineUnits = M.mergeWithKey (\_ a b -> if a+b==0 then Nothing else Just (a+b)) id id

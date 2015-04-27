@@ -12,6 +12,10 @@ import Text.Parsec.Expr
 import Types
 
 
+parseReplCmd = whitespace *> (parseLoad <|> (RStmt <$> parseStmt)) <* whitespace
+parseLoad = RLoad <$> (tryString "load" /> some (satisfy (not . isSpace)))
+
+
 parseInput :: String -> String -> Parsec String () a -> ErrorM a
 parseInput srcName input parser = case parse (parseWholeInput parser) srcName input of
         Left err_ -> err ("Syntax error " ++ show err_)
@@ -37,7 +41,7 @@ parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 parseExpr :: Parsec String () Expr
 parseExpr = do
     res <- buildExpressionParser opTable1 parseExpr'
-    convert <- option Nothing $ Just <$> (whitespace *> tryString "->" />
+    convert <- option Nothing $ Just <$> try (whitespace *> tryString "->" />
         parseExpr <* whitespace)
     case convert of
         Nothing -> pure res
@@ -55,7 +59,7 @@ parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseExpr)
 
 operatorChars = "/<>?:\\|~!@#$%^&*+-="
 reservedOps = [commentLine, commentStart, commentEnd]
-keywords = ["unit", "si-unit"]
+keywords = ["unit", "si-unit", "exit", "load"]
 
 
 

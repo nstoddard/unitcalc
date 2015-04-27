@@ -1,12 +1,12 @@
 # unitcalc
-A calculator supporting units of measurement, in Haskell.
-
-This is a WIP and isn't very useful yet.
+A calculator supporting units of measurement, written in Haskell.
 
 It can do conversions between units of measurement:
 ```
 > 60 mph -> m/s
 26.8224 m/s
+> lightYear -> km
+9.454254955488e12 km
 ```
 
 Defining new units is easy:
@@ -19,7 +19,7 @@ Defining new units is easy:
 220.46341409643068 lb
 ```
 
-Also supports variables:
+It also supports variables:
 ```
 > lightSpeed = 299792458 m/s
 2.99792458e8 meter/second

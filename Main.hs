@@ -14,6 +14,9 @@ Bits, bytes, kibi- and other prefixes
 Allow omitting the leading 0 in ".5"
 Converting to a sum of multiple units (e.g. feet + inches)
 Use Cabal
+Treat "0" the same as "0 meters" etc
+Ban things like "10 m -> 10 m" which doesn't make any sense.
+Clean up the code
 -}
 
 import qualified Data.Map as M
@@ -23,21 +26,32 @@ import Data.Maybe
 import System.Directory
 import Control.Exception
 import qualified System.IO.Strict as Strict
+import qualified System.FilePath as FP
 
 import System.Console.Haskeline as H
+
+import Paths_unitcalc
 
 import Eval
 import Types
 import Parse
 
-stdlibFilename = "stdlib.txt"
-historyFilename = "history.txt"
-envFilename = "env.txt"
+dataDir = getAppUserDataDirectory "unitcalc"
+dataFile filename = (FP.</> filename) <$> dataDir
+
+stdlibLoc = getDataFileName "stdlib.txt"
+historyLoc = dataFile "history.txt"
+envLoc = dataFile "env.txt"
 
 emptyEnv = Env {envUnits = [], envUnitNames = [],
     envUnitMap = M.empty, envVars = M.empty}
 
 main = do
+    putStrLn "unitcalc 0.1, by Nathan Stoddard"
+    createDirectoryIfMissing False =<< dataDir
+    stdlibFilename <- stdlibLoc
+    historyFilename <- historyLoc
+    envFilename <- envLoc
     exists <- doesFileExist envFilename
     env <- if exists
         then Right . read <$> Strict.readFile envFilename
@@ -55,10 +69,21 @@ repl env = do
     case input of
         Nothing -> pure env
         Just input -> do
-            let stmt = parseInput "" input parseStmt
+            let stmt = parseInput "" input parseReplCmd
             case stmt of
                 Left err -> lift (putStrLn err) >> repl env
-                Right stmt -> case evalStmt stmt env of
+                Right (RLoad path) -> do
+                    exists <- lift $ doesFileExist path
+                    if exists
+                        then do
+                            env' <- lift $ runFile path env
+                            case env' of
+                                Left err -> lift (putStrLn err) >> repl env
+                                Right env' -> repl env'
+                        else do
+                            lift $ putStrLn "File doesn't exist."
+                            repl env
+                Right (RStmt stmt) -> case evalStmt stmt env of
                     Left err -> lift (putStrLn err) >> repl env
                     Right (res, env') -> do
                         lift $ putStrLn (prettyPrint res)
