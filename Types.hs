@@ -23,9 +23,10 @@ data Expr =
     EConvert Expr Expr -- A conversion between units
     deriving (Show)
 
+data UnitType = UNormal | USI | UBin deriving (Show, Read)
+
 data UnitDef = UnitDef {
-    -- Whether it's an SI unit; whether it should allow prefixes like "kilo"
-    unitSI :: Bool,
+    unitType :: UnitType,
     unitNames :: [String],
     unitAbbr :: Maybe String,
     unitValue :: Maybe NumUnits
@@ -33,7 +34,7 @@ data UnitDef = UnitDef {
 
 data ReplCmd = RStmt Stmt | RLoad String | RReset
 
-data Stmt = SUnitDef Bool [String] (Maybe String) (Maybe Expr) | SExpr Expr | SDef String Expr
+data Stmt = SUnitDef UnitType [String] (Maybe String) (Maybe Expr) | SExpr Expr | SDef String Expr
     deriving (Show)
 
 type ErrorM t = Either String t

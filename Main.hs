@@ -1,25 +1,34 @@
 {- TODO
+High priority:
+    Support numbers in the format "1000.0e-1"
+    Make it possible to reload the stdlib without resetting everything.
+    Ban things like "10 m -> 10 m" which doesn't make any sense.
+    Allow omitting the leading 0 in ".5"
+    Add rounding to output so you don't see stuff like this:
+        > parsec -> lightYear
+        3.2599999999999993 lightYear
+
 Error checking: verify that you can't do something like "unit year/year" with a duplicate string.
     Also verify that you can't define the same unit more than once
-Support numbers in the format "1000.0e-1"
 Support the syntax "5^-1".
-Add rounding to output so you don't see stuff like this:
-    > parsec -> lightYear
-    3.2599999999999993 lightYear
-Make it possible to reload the stdlib without resetting everything.
 Don't automatically convert to base units; keep the original units where possible.
     E.g. "5 ft * 10 ft" should give an answer in ft^2.
 Find a way to reduce the size of env.txt. The SI prefixes really increase its size. There's a lot of duplicate information as well.
-Bits, bytes, kibi- and other prefixes
-Allow omitting the leading 0 in ".5"
 Converting to a sum of multiple units (e.g. feet + inches)
 Treat "0" the same as "0 meters" etc
-Ban things like "10 m -> 10 m" which doesn't make any sense.
 Clean up the code
 Command-line options?
 Add a 'help' command
 Release executables
 Put on Hackage?
+Functions
+Allow commas in numbers
+Put each output in a varible.
+New unit definitions should override previous ones
+
+Bugs:
+    Sometimes something goes wrong when saving the environment, and it ends up with zero bytes. This happens very rarely and I can't reproduce it.
+    Sometimes pressing ctrl+c results in it saving the environment twice. This shouldn't be possible.
 -}
 
 import qualified Data.Map as M

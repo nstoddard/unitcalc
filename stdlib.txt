@@ -62,3 +62,6 @@ pi = 3.141592653589793238462643383279
 /* This file doesn't include temperature units because conversions between
    them require addition, which isn't supported in unit conversions.
 */
+
+bin-unit bit/bits(b)
+bin-unit byte/bytes(B) = 8 bits

@@ -21,7 +21,7 @@ evalStmts (stmt:stmts) env = case evalStmt stmt env of
 
 
 evalStmt :: Stmt -> Env -> ErrorM (Maybe Expr, Env)
-evalStmt (SUnitDef si names abbr expr) env = do
+evalStmt (SUnitDef utype names abbr expr) env = do
     val <- case expr of
         Nothing -> pure Nothing
         Just expr -> Just <$> evalExpr expr env True
@@ -30,9 +30,9 @@ evalStmt (SUnitDef si names abbr expr) env = do
         Nothing -> pure Nothing
         x -> err $ "Can't define a unit with the value " ++ prettyPrint x
     let
-        unitDef = UnitDef {unitSI = si,
+        unitDef = UnitDef {unitType = utype,
             unitNames = names, unitAbbr = abbr, unitValue = val'}
-    pure (Nothing, foldl' addUnitDef env (addSI unitDef))
+    pure (Nothing, foldl' addUnitDef env (addSIPrefixes unitDef))
 evalStmt (SDef id val) env = do
     val' <- evalExpr val env True
     case val' of
@@ -108,18 +108,19 @@ convertUnits unitList m a b
 combineUnits :: Units -> Units -> Units
 combineUnits = M.mergeWithKey (\_ a b -> if a+b==0 then Nothing else Just (a+b)) id id
 
--- Adds SI prefixes
-addSI unitDef
-    | unitSI unitDef = unitDef : map addSI' si
-    | otherwise = [unitDef] where
-    addSI' (prefix, shortPrefix, mul) = UnitDef {
-        unitSI = False,
-        unitNames = (prefix++) <$> unitNames unitDef,
-        unitAbbr = (shortPrefix++) <$> unitAbbr unitDef,
-        unitValue = Just (mul, M.singleton (head $ unitNames unitDef) 1.0)
-    }
+addSIPrefixes unitDef = case unitType unitDef of
+    USI -> unitDef : map addSIPrefixes' siPrefixes
+    UBin -> unitDef : map addSIPrefixes' siPrefixes ++ map addSIPrefixes' binPrefixes
+    UNormal -> [unitDef]
+    where
+        addSIPrefixes' (prefix, shortPrefix, mul) = UnitDef {
+            unitType = UNormal,
+            unitNames = (prefix++) <$> unitNames unitDef,
+            unitAbbr = (shortPrefix++) <$> unitAbbr unitDef,
+            unitValue = Just (mul, M.singleton (head $ unitNames unitDef) 1.0)
+        }
 
-si = [
+siPrefixes = [
     ("yotta", "Y", 1000**8),
     ("zetta", "Z", 1000**7),
     ("exa"  , "E", 1000**6),
@@ -142,6 +143,16 @@ si = [
     ("zepto", "z", 1000**(-7)),
     ("yocto", "y", 1000**(-8))
     ]
+binPrefixes = [
+    ("yobi", "Yi", 1024**8),
+    ("zebi", "Zi", 1024**7),
+    ("exbi", "Ei", 1024**6),
+    ("pebi", "Pi", 1024**5),
+    ("tebi", "Ti", 1024**4),
+    ("gibi", "Gi", 1024**3),
+    ("mebi", "Mi", 1024**2),
+    ("kibi", "Ki", 1024**1)
+    ]
 
 
 addUnitDef env unitDef
@@ -152,7 +163,7 @@ addUnitDef env unitDef
             Nothing -> envUnitMap env
             Just value -> M.fromList (map (, value) (unitNames unitDef ++ F.toList (unitAbbr unitDef))) `M.union` envUnitMap env
         }
-    | otherwise = env
+    | otherwise = env --TODO: in this case, tell the user that the unit wasn't actually defined
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ F.toList (unitAbbr unitDef))
 

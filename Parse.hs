@@ -28,14 +28,15 @@ parseStmts = anyWhitespace *> many (parseStmt <* anyWhitespace)
 parseStmt :: Parsec String () Stmt
 parseStmt = parseUnitDef <|> try parseDef <|> (SExpr <$> parseExpr)
 parseUnitDef = do
-    si <- (tryString "si-unit" *> pure True) <|>
-        (tryString "unit" *> pure False)
+    utype <- (tryString "si-unit" *> pure USI) <|>
+        (tryString "bin-unit" *> pure UBin) <|>
+        (tryString "unit" *> pure UNormal)
     names <- whitespace *> sepBy1 identifier (char '/')
     whitespace
     abbr <- option Nothing $ Just <$> try (char '(' /> identifier </ char ')')
     whitespace
     value <- option Nothing $ Just <$> (char '=' /> parseExpr <* whitespace)
-    pure $ SUnitDef si names abbr value
+    pure $ SUnitDef utype names abbr value
 parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 
 
