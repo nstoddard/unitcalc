@@ -7,6 +7,7 @@ High priority:
     Add rounding to output so you don't see stuff like this:
         > parsec -> lightYear
         3.2599999999999993 lightYear
+    Add backups of env.txt in case something happens to it
 
 Error checking: verify that you can't do something like "unit year/year" with a duplicate string.
     Also verify that you can't define the same unit more than once
@@ -63,8 +64,10 @@ envLoc = dataFile "env.txt"
 emptyEnv = Env {envUnits = [], envUnitNames = [],
     envUnitMap = M.empty, envVars = M.empty}
 
+-- TODO: do I need to run setUnicode?
 main = do
     putStrLn $ "unitcalc " ++ showVersion version ++ ", by Nathan Stoddard"
+    -- TODO: why not run this when saving state, instead of here?
     createDirectoryIfMissing False =<< dataDir
     stdlibFilename <- stdlibLoc
     historyFilename <- historyLoc
