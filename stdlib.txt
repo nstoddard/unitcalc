@@ -14,8 +14,8 @@ unit decade/decades = 10 years
 unit century/centuries = 100 years
 unit millenium/millenia = 1000 years
 
-/* The kilogram is defined separately b/c it's technically an SI base unit,
-   not the gram. */
+/* The kilogram is defined separately from the gram because it's technically
+   the SI base unit, not the gram. */
 unit kilogram/kilograms(kg)
 si-unit gram/grams(g) = 0.001 kg
 
@@ -41,7 +41,7 @@ unit lightYear/lightYears = lightSpeed * 1 year
 si-unit parsec/parsecs(pc) = 3.0857*10^16 m
 unit astronomicalUnit/astronomicalUnits(AU) = 1.4960*10^11 m
 
-unit pound/pounds(lb) = 0.45359 kg
+unit pound/pounds(lb/lbs) = 0.45359 kg
 
 unit mph = mi/hr
 unit kph = km/hr

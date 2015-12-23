@@ -32,10 +32,10 @@ parseUnitDef = do
         (tryString "unit" *> pure UNormal)
     names <- whitespace *> sepBy1 identifier (char '/')
     whitespace
-    abbr <- option Nothing $ Just <$> try (char '(' /> identifier </ char ')')
+    abbrs <- option [] $ try (char '(' /> sepBy1 identifier (char '/') </ char ')')
     whitespace
     value <- option Nothing $ Just <$> (char '=' /> parseExpr <* whitespace)
-    pure $ SUnitDef utype names abbr value
+    pure $ SUnitDef utype names abbrs value
 parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 
 

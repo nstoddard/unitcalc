@@ -28,13 +28,13 @@ data UnitType = UNormal | USI | UBin deriving (Show, Read)
 data UnitDef = UnitDef {
     unitType :: UnitType,
     unitNames :: [String],
-    unitAbbr :: Maybe String,
+    unitAbbrs :: [String],
     unitValue :: Maybe NumUnits
 } deriving (Show, Read)
 
 data ReplCmd = RStmt Stmt | RLoad String
 
-data Stmt = SUnitDef UnitType [String] (Maybe String) (Maybe Expr) | SExpr Expr | SDef String Expr
+data Stmt = SUnitDef UnitType [String] [String] (Maybe Expr) | SExpr Expr | SDef String Expr
     deriving (Show)
 
 type ErrorM t = Either String t

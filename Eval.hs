@@ -21,7 +21,7 @@ evalStmts (stmt:stmts) env = case evalStmt stmt env of
 
 
 evalStmt :: Stmt -> Env -> ErrorM (Maybe Expr, Env)
-evalStmt (SUnitDef utype names abbr expr) env = do
+evalStmt (SUnitDef utype names abbrs expr) env = do
     val <- case expr of
         Nothing -> pure Nothing
         Just expr -> Just <$> evalExpr expr env True
@@ -31,7 +31,7 @@ evalStmt (SUnitDef utype names abbr expr) env = do
         x -> err $ "Can't define a unit with the value " ++ prettyPrint x
     let
         unitDef = UnitDef {unitType = utype,
-            unitNames = names, unitAbbr = abbr, unitValue = val'}
+            unitNames = names, unitAbbrs = abbrs, unitValue = val'}
     pure (Nothing, foldl' addUnitDef env (addSIPrefixes unitDef))
 evalStmt (SDef id val) env = do
     val' <- evalExpr val env True
@@ -93,7 +93,7 @@ toBaseUnits unitList m (n, units) = M.foldl'
     toBaseUnits' unit power = case M.lookup unit m of
         Nothing -> (1.0, M.singleton unit' power) where
             unit' = head . unitNames $ fromJust
-                (find (\x -> unit `elem` unitNames x || Just unit == unitAbbr x) unitList)
+                (find (\x -> unit `elem` unitNames x || unit `elem` unitAbbrs x) unitList)
         Just res -> toBaseUnits unitList m (((**power) *** M.map (*power)) res)
 
 convertUnits :: UnitList -> UnitMap -> NumUnits -> Units -> ErrorM NumUnits
@@ -116,7 +116,7 @@ addSIPrefixes unitDef = case unitType unitDef of
         addSIPrefixes' (prefix, shortPrefix, mul) = UnitDef {
             unitType = UNormal,
             unitNames = (prefix++) <$> unitNames unitDef,
-            unitAbbr = (shortPrefix++) <$> unitAbbr unitDef,
+            unitAbbrs = (shortPrefix++) <$> unitAbbrs unitDef,
             unitValue = Just (mul, M.singleton (head $ unitNames unitDef) 1.0)
         }
 
@@ -158,14 +158,14 @@ binPrefixes = [
 addUnitDef env unitDef
     | not (unitExists env unitDef) = env {
         envUnits = unitDef : envUnits env,
-        envUnitNames = unitNames unitDef ++ F.toList (unitAbbr unitDef) ++ envUnitNames env,
+        envUnitNames = unitNames unitDef ++ unitAbbrs unitDef ++ envUnitNames env,
         envUnitMap = case unitValue unitDef of
             Nothing -> envUnitMap env
-            Just value -> M.fromList (map (, value) (unitNames unitDef ++ F.toList (unitAbbr unitDef))) `M.union` envUnitMap env
+            Just value -> M.fromList (map (, value) (unitNames unitDef ++ unitAbbrs unitDef)) `M.union` envUnitMap env
         }
     | otherwise = env --TODO: in this case, tell the user that the unit wasn't actually defined
 
-unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ F.toList (unitAbbr unitDef))
+unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
 
 -- Built-in functions and operators
