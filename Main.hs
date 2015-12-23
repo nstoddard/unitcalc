@@ -1,20 +1,17 @@
 {- TODO
 High priority:
     Support numbers in the format "1000.0e-1"
-    Make it possible to reload the stdlib without resetting everything.
     Ban things like "10 m -> 10 m" which doesn't make any sense.
     Allow omitting the leading 0 in ".5"
     Add rounding to output so you don't see stuff like this:
         > parsec -> lightYear
         3.2599999999999993 lightYear
-    Add backups of env.txt in case something happens to it
 
 Error checking: verify that you can't do something like "unit year/year" with a duplicate string.
     Also verify that you can't define the same unit more than once
 Support the syntax "5^-1".
 Don't automatically convert to base units; keep the original units where possible.
     E.g. "5 ft * 10 ft" should give an answer in ft^2.
-Find a way to reduce the size of env.txt. The SI prefixes really increase its size. There's a lot of duplicate information as well.
 Converting to a sum of multiple units (e.g. feet + inches)
 Treat "0" the same as "0 meters" etc
 Clean up the code
@@ -26,6 +23,7 @@ Functions
 Allow commas in numbers
 Put each output in a varible.
 New unit definitions should override previous ones
+Use my 'repl' lib (currently unreleased)
 
 Bugs:
     Sometimes something goes wrong when saving the environment, and it ends up with zero bytes. This happens very rarely and I can't reproduce it.
@@ -41,6 +39,7 @@ import Control.Exception
 import qualified System.IO.Strict as Strict
 import qualified System.FilePath as FP
 import Data.Version
+import Control.Monad
 
 import qualified Text.PrettyPrint.Leijen as P
 import Text.PrettyPrint.Leijen ((<//>), (</>), Pretty, pretty, displayS, renderPretty)
@@ -59,7 +58,7 @@ dataFile filename = (FP.</> filename) <$> dataDir
 
 stdlibLoc = getDataFileName "stdlib.txt"
 historyLoc = dataFile "history.txt"
-envLoc = dataFile "env.txt"
+addedUnitsLoc = dataFile "addedUnits.txt"
 
 emptyEnv = Env {envUnits = [], envUnitNames = [],
     envUnitMap = M.empty, envVars = M.empty}
@@ -68,20 +67,18 @@ emptyEnv = Env {envUnits = [], envUnitNames = [],
 main = do
     putStrLn $ "unitcalc " ++ showVersion version ++ ", by Nathan Stoddard"
     -- TODO: why not run this when saving state, instead of here?
-    createDirectoryIfMissing False =<< dataDir
+    createDirectoryIfMissing True =<< dataDir
     stdlibFilename <- stdlibLoc
+    addedUnitsFilename <- addedUnitsLoc
     historyFilename <- historyLoc
-    envFilename <- envLoc
-    exists <- doesFileExist envFilename
-    env <- if exists
-        then Right . read <$> Strict.readFile envFilename
-        else loadFile stdlibFilename emptyEnv
+
+    addedUnitsExists <- doesFileExist addedUnitsFilename
+    env <- loadFile stdlibFilename emptyEnv
+    env <- if addedUnitsExists then join <$> mapM (loadFile addedUnitsFilename) env else pure env
+
     case env of
         Left err -> putStrLn err
-        Right env -> do
-            env' <- runInputT (Settings noCompletion (Just historyFilename) True) $ repl env
-            putStrLn $ "Saving file " ++ envFilename
-            writeFile envFilename (show env')
+        Right env -> void $ runInputT (Settings noCompletion (Just historyFilename) True) $ repl env
 
 
 -- Pretty-prints a string by splitting it into words so they can be properly 
@@ -98,16 +95,14 @@ repl env = do
             case stmt of
                 Left err -> lift (putStrLn err) >> repl env
                 Right (RLoad path) -> loadFileRepl path env
-                Right RReset -> do
-                    doIt <- lift $ yesno $ prettyPrint $ prettyString "Really reset the environment? This will delete all units and variables except those in the standard library." P.</> pretty "[enter Y or N]  > "
-                    if doIt
-                        then do
-                            stdlibFilename <- lift stdlibLoc
-                            loadFileRepl stdlibFilename emptyEnv
-                        else repl env
                 Right (RStmt stmt) -> case evalStmt stmt env of
                     Left err -> lift (putStrLn err) >> repl env
                     Right (res, env') -> do
+                        case stmt of
+                            SUnitDef {} -> lift $ do
+                                addedUnitsFilename <- addedUnitsLoc
+                                appendFile addedUnitsFilename (input ++ "\n")
+                            _ -> pure ()
                         lift $ putStrLn (prettyPrint res)
                         repl env'
 

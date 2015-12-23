@@ -1,5 +1,3 @@
-// NOTE: modifying the stdlib only takes effect if you run the `reset` command.
-
 // The si- prefix automatically generates prefixes like kilo-
 si-unit meter/meters(m)
 unit inch/inches(in) = 2.54 cm
@@ -60,7 +58,7 @@ earthGravity = 9.8 m/s^2
 pi = 3.141592653589793238462643383279
 
 /* This file doesn't include temperature units because conversions between
-   them require addition, which isn't supported in unit conversions.
+   they require addition, which isn't supported in unit conversions.
 */
 
 bin-unit bit/bits(b)
