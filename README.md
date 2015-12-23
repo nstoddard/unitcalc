@@ -56,9 +56,6 @@ Self-explanatory.
 `> load <filename>`  
 Loads the file and runs every line in it.
 
-`> reset`  
-Resets the environment, deleting all units and variables that have been defined, except for those in the standard library.
-
 
 ### Notes
 
@@ -71,6 +68,6 @@ Operator precedence is a bit strange compared to most languages. It matters whet
 20.0
 ```
 
-There's two commands for defining units: `unit` and `si-unit`. They have the same syntax, but the difference is that `si-unit` automatically generates versions of the unit with SI prefixes. For instance, `unit meter/meters(m)` will automatically define the units `centimeter`, `cm`, `kilometer`, `km`, etc.
+There's three commands for defining units: `unit`, `si-unit`, and `bin-unit`. They have the same syntax, but the difference is that `si-unit` automatically generates versions of the unit with SI prefixes, and `bin-unit` also generates binary prefixes. For instance, `si-unit meter/meters(m)` will automatically define the units `centimeter`, `cm`, `kilometer`, `km`, etc.
 
 Units and variables are case-sensitive. For instance, `5 KM` won't work.
