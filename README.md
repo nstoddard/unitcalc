@@ -31,6 +31,16 @@ It also supports variables:
 0.29979245800000004 meter
 ```
 
+It supports bits and bytes, and the corresponding prefixes:
+```
+> 1 -> bits/byte
+8.0 bits/byte
+> 1 MB -> bytes
+1000000.0 bytes
+> 1 MiB -> bytes
+1048576.0 bytes
+```
+
 The standard library currently includes definitions of most SI units and a few others.
 
 Units and variables defined in the REPL are automatically saved. Files are also supported (through the `load` command), but the REPL is the primary interface.
