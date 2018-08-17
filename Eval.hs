@@ -51,8 +51,8 @@ evalExpr (EApply fn args) env = do
     fn' <- evalExpr fn env
     args' <- mapM (\x -> evalExpr x env) args
     case fn' of
-        EBuiltin str -> applyBuiltin str args'
-        n@(ENum {}) -> foldM (\a b -> applyBuiltin "*" [a,b]) n args'
+        EBuiltin str -> applyBuiltin str args' env
+        n@(ENum {}) -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
         x -> err $ "Trying to treat " ++ prettyPrint x ++ " as a function."
 evalExpr (EId str) env
     | str `elem` builtins = pure (EBuiltin str)
@@ -68,7 +68,7 @@ evalExpr (EConvert a b) env = do
         x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
     case (a', validUnit (snd b') env) of
         (ENum num units, True) -> do
-            (num',units') <- convertUnits (envUnits env) (envUnitMap env) (num/fst b', units) (snd b')
+            (num',units') <- convertUnits (num/fst b', units) (snd b') env
             pure (ENum num' units')
         (ENum num units, False) -> err $
             "Invalid unit in convesion: " ++ prettyPrint b ++"."
@@ -80,25 +80,27 @@ evalExpr (EBuiltin str) env = err
 validUnit :: Units -> Env -> Bool
 validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
 
-toBaseUnits :: UnitList -> UnitMap -> NumUnits -> NumUnits
-toBaseUnits unitList m (n, units) = M.foldl'
+toBaseUnits :: NumUnits -> Env -> NumUnits
+toBaseUnits (n, units) env = M.foldl'
     (\(aN, aUnits) (bN, bUnits) -> (aN*bN, combineUnits aUnits bUnits))
     (n, M.empty) (M.mapWithKey toBaseUnits' units) where
+    unitList = envUnits env
+    m = envUnitMap env
     toBaseUnits' :: Unit -> Power -> NumUnits
     toBaseUnits' unit power = case M.lookup unit m of
         Nothing -> (1.0, M.singleton unit' power) where
             unit' = head . unitNames $ fromJust
                 (find (\x -> unit `elem` unitNames x || unit `elem` unitAbbrs x) unitList)
-        Just res -> toBaseUnits unitList m (((**power) *** M.map (*power)) res)
+        Just res -> toBaseUnits (((**power) *** M.map (*power)) res) env
 
-convertUnits :: UnitList -> UnitMap -> NumUnits -> Units -> ErrorM NumUnits
-convertUnits unitList m a b
+convertUnits :: NumUnits -> Units -> Env -> ErrorM NumUnits
+convertUnits a b env
     | aUnits == bUnits = pure (aRes*recip bRes, b)
     | otherwise = err $ "Invalid unit conversion from " ++
         prettyPrint aUnits ++ " to " ++ prettyPrint b ++ "."
     where
-    (aRes, aUnits) = toBaseUnits unitList m a
-    (bRes, bUnits) = toBaseUnits unitList m (1.0, b)
+    (aRes, aUnits) = toBaseUnits a env
+    (bRes, bUnits) = toBaseUnits (1.0, b) env
 
 combineUnits :: Units -> Units -> Units
 combineUnits = M.mergeWithKey (\_ a b -> if a+b==0 then Nothing else Just (a+b)) id id
@@ -162,22 +164,23 @@ addUnitDef env unitDef
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
-
 -- Built-in functions and operators
-applyBuiltin :: String -> [Expr] -> ErrorM Expr
-applyBuiltin "+" [ENum a aUnits, ENum b bUnits]
-    | aUnits == bUnits = pure (ENum (a+b) aUnits)
-    | otherwise = err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits, ENum b bUnits]
-    | aUnits == bUnits = pure (ENum (a-b) aUnits)
-    | otherwise = err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits] = pure (ENum (-a) aUnits)
-applyBuiltin "*" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a*b) (combineUnits aUnits bUnits)
-applyBuiltin "/" [ENum a aUnits, ENum b bUnits] = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
-applyBuiltin "^" [ENum a aUnits, ENum b bUnits]
+applyBuiltin :: String -> [Expr] -> Env -> ErrorM Expr
+applyBuiltin "+" [ENum a aUnits, ENum b bUnits] env = do
+    (b', bUnits') <- convertUnits (b, bUnits) aUnits env
+    if aUnits == bUnits' then pure (ENum (a+b') aUnits)
+        else err "Incompatible units"
+applyBuiltin "-" [ENum a aUnits, ENum b bUnits] env = do
+    (b', bUnits') <- convertUnits (b, bUnits) aUnits env
+    if aUnits == bUnits' then pure (ENum (a-b') aUnits)
+        else err "Incompatible units"
+applyBuiltin "-" [ENum a aUnits] _ = pure (ENum (-a) aUnits)
+applyBuiltin "*" [ENum a aUnits, ENum b bUnits] _ = pure $ ENum (a*b) (combineUnits aUnits bUnits)
+applyBuiltin "/" [ENum a aUnits, ENum b bUnits] _ = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
+applyBuiltin "^" [ENum a aUnits, ENum b bUnits] _
     | M.null bUnits = pure $ ENum (a**b) (M.map (*b) aUnits)
     | otherwise = err "Invalid use of ^"
-applyBuiltin f _ = err $ "Invalid call to builtin function " ++
+applyBuiltin f _ _ = err $ "Invalid call to builtin function " ++
     prettyPrint f
 
 -- TODO: find a way to automatically generate this
