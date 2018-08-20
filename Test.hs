@@ -11,7 +11,7 @@ import Util
 
 parseExprForTest input = parseInput "" input parseExpr
 
-evalExprForTest :: String -> IO (ErrorM Expr)
+evalExprForTest :: String -> IO (ErrorM Value)
 evalExprForTest str = do
   stdlibFilename <- stdlibLoc
   let expr = parseExprForTest str

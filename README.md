@@ -41,6 +41,13 @@ It supports bits and bytes, and the corresponding prefixes:
 1048576.0 bytes
 ```
 
+It also supports functions:
+```
+> f = \x,y -> x+y
+> f 5 4
+9.0
+```
+
 The standard library currently includes definitions of most SI units and a few others.
 
 Units and variables defined in the REPL are automatically saved. Files are also supported (through the `load` command), but the REPL is the primary interface.

@@ -20,13 +20,13 @@ evalStmts (stmt:stmts) env = case evalStmt stmt env of
     Right (_,env') -> evalStmts stmts env'
 
 
-evalStmt :: Stmt -> Env -> ErrorM (Maybe Expr, Env)
+evalStmt :: Stmt -> Env -> ErrorM (Maybe Value, Env)
 evalStmt (SUnitDef utype names abbrs expr) env = do
     val <- case expr of
         Nothing -> pure Nothing
         Just expr -> Just <$> evalExpr expr env
     val' <- case val of
-        Just (ENum num units) -> pure $ Just (num, units)
+        Just (VNum num units) -> pure $ Just (num, units)
         Nothing -> pure Nothing
         x -> err $ "Can't define a unit with the value " ++ prettyPrint x
     let
@@ -48,45 +48,43 @@ lookupVar str (env:envs) = case M.lookup str env of
     Nothing -> lookupVar str envs
     Just val -> val
 
-evalExpr :: Expr -> Env -> ErrorM Expr
-evalExpr x@(ENum {}) env = pure x
+evalExpr :: Expr -> Env -> ErrorM Value
+evalExpr (ENum num units) env = pure (VNum num units)
 evalExpr (EApply fn args) env = do
     fn' <- evalExpr fn env
     args' <- mapM (\arg -> evalExpr arg env) args
     case fn' of
-        EBuiltin str -> applyBuiltin str args' env
-        n@(ENum {}) -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
-        EClosure params body closure -> do
-            let args = zip params args'
-            let env' = env {
-                envVars = M.fromList args : closure
-            }
-            evalExpr body env'
-        x -> err $ "Trying to treat " ++ prettyPrint x ++ " as a function."
+        VBuiltin str -> applyBuiltin str args' env
+        n@(VNum {}) -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
+        VClosure params body closure -> if length params /= length args'
+            then err "Params and args must be the same length"
+            else do
+                let args = zip params args'
+                let env' = env {
+                    envVars = M.fromList args : closure
+                }
+                evalExpr body env'
 evalExpr (EId str) env
-    | str `elem` builtins = pure (EBuiltin str)
+    | str `elem` builtins = pure (VBuiltin str)
     | any (str `M.member`) (envVars env) = pure $ lookupVar str (envVars env)
     | str `M.member` envDeclarations env = pure $ lookupVar str [envDeclarations env]
-    | str `elem` envUnitNames env = pure (ENum 1.0 (M.singleton str 1.0))
+    | str `elem` envUnitNames env = pure (VNum 1.0 (M.singleton str 1.0))
     | otherwise = err $ "Unknown identifier or unit: " ++ str ++ "."
 evalExpr (EConvert a b) env = do
     a' <- evalExpr a env
     b' <- evalExpr b env
     b' <- case b' of
-        ENum num units -> pure (num, units)
+        VNum num units -> pure (num, units)
         x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
     case (a', validUnit (snd b') env) of
-        (ENum num units, True) -> do
+        (VNum num units, True) -> do
             (num',units') <- convertUnits (num/fst b', units) (snd b') env
-            pure (ENum num' units')
-        (ENum num units, False) -> err $
+            pure (VNum num' units')
+        (VNum num units, False) -> err $
             "Invalid unit in convesion: " ++ prettyPrint b ++"."
         (x, _) -> err $
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
-evalExpr (EBuiltin str) env = err
-    "Trying to evaluate EBuiltin. This is a bug."
-evalExpr (EFn args body) env = pure $ EClosure args body (envVars env)
-evalExpr (EClosure {}) env = err "Trying to evaluate EClosure. This is a bug."
+evalExpr (EFn args body) env = pure $ VClosure args body (envVars env)
 
 validUnit :: Units -> Env -> Bool
 validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
@@ -176,20 +174,20 @@ addUnitDef env unitDef
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
 -- Built-in functions and operators
-applyBuiltin :: String -> [Expr] -> Env -> ErrorM Expr
-applyBuiltin "+" [ENum a aUnits, ENum b bUnits] env = do
+applyBuiltin :: String -> [Value] -> Env -> ErrorM Value
+applyBuiltin "+" [VNum a aUnits, VNum b bUnits] env = do
     (b', bUnits') <- convertUnits (b, bUnits) aUnits env
-    if aUnits == bUnits' then pure (ENum (a+b') aUnits)
+    if aUnits == bUnits' then pure (VNum (a+b') aUnits)
         else err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits, ENum b bUnits] env = do
+applyBuiltin "-" [VNum a aUnits, VNum b bUnits] env = do
     (b', bUnits') <- convertUnits (b, bUnits) aUnits env
-    if aUnits == bUnits' then pure (ENum (a-b') aUnits)
+    if aUnits == bUnits' then pure (VNum (a-b') aUnits)
         else err "Incompatible units"
-applyBuiltin "-" [ENum a aUnits] _ = pure (ENum (-a) aUnits)
-applyBuiltin "*" [ENum a aUnits, ENum b bUnits] _ = pure $ ENum (a*b) (combineUnits aUnits bUnits)
-applyBuiltin "/" [ENum a aUnits, ENum b bUnits] _ = pure $ ENum (a/b) (combineUnits aUnits (M.map negate bUnits))
-applyBuiltin "^" [ENum a aUnits, ENum b bUnits] _
-    | M.null bUnits = pure $ ENum (a**b) (M.map (*b) aUnits)
+applyBuiltin "-" [VNum a aUnits] _ = pure (VNum (-a) aUnits)
+applyBuiltin "*" [VNum a aUnits, VNum b bUnits] _ = pure $ VNum (a*b) (combineUnits aUnits bUnits)
+applyBuiltin "/" [VNum a aUnits, VNum b bUnits] _ = pure $ VNum (a/b) (combineUnits aUnits (M.map negate bUnits))
+applyBuiltin "^" [VNum a aUnits, VNum b bUnits] _
+    | M.null bUnits = pure $ VNum (a**b) (M.map (*b) aUnits)
     | otherwise = err "Invalid use of ^"
 applyBuiltin f _ _ = err $ "Invalid call to builtin function " ++
     prettyPrint f
