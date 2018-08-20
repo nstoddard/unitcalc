@@ -1,10 +1,9 @@
 name: unitcalc
-version: 0.1
+version: 0.2
 description: A calculator supporting units of measurement
 license: MIT
 license-file: LICENSE
 author: Nathan Stoddard
-maintainer: nstodda@purdue.edu
 build-type: Simple
 cabal-version: >=1.2
 
@@ -17,3 +16,10 @@ data-files:
 executable unitcalc
     main-is: Main.hs
     build-depends: base, directory, strict, haskeline, wl-pprint, parsec, transformers, containers, filepath
+    ghc-options: -Werror -Wall -fwarn-tabs -fwarn-incomplete-record-updates  -fno-warn-missing-signatures -fno-warn-name-shadowing -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports -fno-warn-unused-matches -fno-warn-unused-binds -fno-warn-type-defaults
+
+test-suite unitcalc-tests
+    main-is: Test.hs
+    type: exitcode-stdio-1.0
+    build-depends: test-framework, test-framework-hunit, HUnit
+    ghc-options: -Werror -Wall -fwarn-tabs -fwarn-incomplete-record-updates -fno-warn-missing-signatures -fno-warn-name-shadowing -fno-warn-unused-do-bind -fno-warn-orphans -fno-warn-unused-imports -fno-warn-unused-matches -fno-warn-unused-binds -fno-warn-type-defaults

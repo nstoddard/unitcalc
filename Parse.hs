@@ -42,13 +42,13 @@ parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 parseExpr :: Parsec String () Expr
 parseExpr = do
     res <- buildExpressionParser opTable1 parseExpr'
-    convert <- option Nothing $ Just <$> try (whitespace *> tryString "->" />
+    convert <- option Nothing $ Just <$> try (whitespace *> tryString "@" />
         parseExpr <* whitespace)
     case convert of
         Nothing -> pure res
         Just units -> pure (EConvert res units)
 
-parseExpr' = try parseApply <|> parsePrefixOp <|> parseExpr''
+parseExpr' = try parseApply <|> parseFn <|> parsePrefixOp <|> parseExpr''
 parseExpr'' = buildExpressionParser opTable2 parseSingleTokenExpr
 parseSingleTokenExpr = parseParens <|> parseNum <|> parseId
 parseParens = char '(' /> parseExpr </ char ')'
@@ -56,11 +56,14 @@ parseId = EId <$> identifier
 parseNum = ENum <$> (float <|> fromIntegral <$> decimal) <*> pure M.empty
 parseApply = EApply <$> parseExpr'' <*> some (try $ whitespace *> parseExpr'')
 parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseExpr)
-
+parseFn = do
+    args <- tryString "\\" /> sepBy1 identifier (char ',' *> whitespace) <* whitespace
+    body <- tryString "->" /> parseExpr
+    pure $ EFn args body
 
 operatorChars = "/<>?:\\|~!@#$%^&*+-="
-reservedOps = [commentLine, commentStart, commentEnd]
-keywords = ["unit", "si-unit", "exit", "load"]
+reservedOps = [commentLine, commentStart, commentEnd, "\\", "->", "@"]
+keywords = ["unit", "si-unit", "bin-unit", "exit", "load"]
 
 
 
@@ -80,11 +83,11 @@ a </> b = a <*> (whitespace *> b)
 
 skipWhitespace :: String -> Parsec String () ()
 skipWhitespace chars = skipMany (void (oneOf chars) <|> oneLineComment <|>
-    multiLineComment <|> void (string "\\\n")) <?> "whitespace"
+    multiLineComment <|> void (tryString "\\\n")) <?> "whitespace"
 
 skipReqWhitespace :: String -> Parsec String () ()
 skipReqWhitespace chars = skipSome (void (oneOf chars) <|> oneLineComment <|>
-    multiLineComment <|> void (string "\\\n")) <?> "whitespace"
+    multiLineComment <|> void (tryString "\\\n")) <?> "whitespace"
 
 commentLine = "//"
 commentStart = "/*"

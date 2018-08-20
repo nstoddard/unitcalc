@@ -20,17 +20,20 @@ data Expr =
     EApply Expr [Expr] | -- Application of a function or operator
     EId String | -- An identifier
     EBuiltin String | -- A built-in function/operator
-    EConvert Expr Expr -- A conversion between units
-    deriving (Show)
+    EConvert Expr Expr | -- A conversion between units
+    EFn [String] Expr | -- A function
+    -- Like EFn, but with an environment.
+    EClosure [String] Expr [Map String Expr]
+    deriving (Show, Eq)
 
-data UnitType = UNormal | USI | UBin deriving (Show, Read)
+data UnitType = UNormal | USI | UBin deriving (Show)
 
 data UnitDef = UnitDef {
     unitType :: UnitType,
     unitNames :: [String],
     unitAbbrs :: [String],
     unitValue :: Maybe NumUnits
-} deriving (Show, Read)
+} deriving (Show)
 
 data ReplCmd = RStmt Stmt | RLoad String
 
@@ -44,12 +47,15 @@ data Env = Env {
     envUnits :: UnitList,
     envUnitNames :: [String],
     envUnitMap :: UnitMap,
-    envVars :: Map String NumUnits
-} deriving (Show, Read)
+    envDeclarations :: Map String Expr,
+    envVars :: [Map String Expr]
+} deriving (Show)
 
 type UnitList = [UnitDef]
 type UnitMap = Map String NumUnits
 
+emptyEnv = Env {envUnits = [], envUnitNames = [],
+    envUnitMap = M.empty, envDeclarations = M.empty, envVars = [M.empty]}
 
 --- Pretty printing
 

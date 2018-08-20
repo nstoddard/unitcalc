@@ -1,23 +1,22 @@
 module Util where
 
-import Control.Applicative
-import Data.Char
-import System.IO
+import qualified System.IO.Strict as Strict
+import System.Directory
 
-flush :: IO ()
-flush = hFlush stdout
+import Types
+import Eval
+import Parse
 
-prompt :: String -> IO String
-prompt msg = do
-  putStr msg >> flush
-  getLine
+import Paths_unitcalc
 
-prompt' :: [(Char,b)] -> String -> IO b
-prompt' xs msg = do
-  response <- prompt msg
-  if null response
-    then prompt' xs msg
-    else maybe (prompt' xs msg) pure $
-      lookup (toLower $ head response) xs
+stdlibLoc = getDataFileName "stdlib.txt"
 
-yesno = prompt' [('y',True),('n',False)]
+loadFile :: String -> Env -> IO (ErrorM Env)
+loadFile filename env = do
+    exists <- doesFileExist filename
+    if not exists then pure (Left $ "File doesn't exist: " ++ filename) else do
+    input <- Strict.readFile filename
+    let stmts = parseInput filename input parseStmts
+    pure $ case stmts of
+        Left err -> Left err
+        Right stmts -> evalStmts stmts env

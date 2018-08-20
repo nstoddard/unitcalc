@@ -10,14 +10,14 @@ unit minute/minutes(min) = 60 seconds
 unit hour/hours(hr) = 60 minutes
 unit day/days(d) = 24 hours
 unit year/years(yr) = 365 days
+unit julianYear = 365.25 days
 unit decade/decades = 10 years
 unit century/centuries = 100 years
 unit millenium/millenia = 1000 years
 
-/* The kilogram is defined separately from the gram because it's technically
-   the SI base unit, not the gram. */
-unit kilogram/kilograms(kg)
-si-unit gram/grams(g) = 0.001 kg
+/* The kilogram is technically the SI base unit, not the gram, but it doesn't matter here
+   because there's no automatic conversion to base units. */
+si-unit gram/grams(g)
 
 si-unit ampere/amperes/amp/amps(A)
 si-unit mole/moles(mol)
@@ -37,8 +37,8 @@ si-unit tesla/teslas(T) = Wb/m^2
 si-unit henry/henries(H) = Wb/A
 
 lightSpeed = 299792458 m/s
-unit lightYear/lightYears = lightSpeed * 1 year
-si-unit parsec/parsecs(pc) = 3.0857*10^16 m
+unit lightYear/lightYears = lightSpeed * 1 julianYear
+si-unit parsec/parsecs(pc) = 3.08567758149137*10^16 m
 unit astronomicalUnit/astronomicalUnits(AU) = 1.4960*10^11 m
 
 unit pound/pounds(lb/lbs) = 0.45359 kg

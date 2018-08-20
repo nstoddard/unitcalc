@@ -32,32 +32,41 @@ evalStmt (SUnitDef utype names abbrs expr) env = do
     let
         unitDef = UnitDef {unitType = utype,
             unitNames = names, unitAbbrs = abbrs, unitValue = val'}
-    pure (Nothing, foldl' addUnitDef env (addSIPrefixes unitDef))
+    env' <- foldM addUnitDef env (addSIPrefixes unitDef)
+    pure (Nothing, env')
 evalStmt (SDef id val) env = do
     val' <- evalExpr val env
-    case val' of
-        ENum num units -> pure (Just val', env {
-            envVars = M.insert id (num,units) (envVars env)
-        })
-        x -> err $ "Can't define a variable with the value " ++ prettyPrint x
+    pure (Just val', env {
+        envDeclarations = M.insert id val' (envDeclarations env)
+    })
 evalStmt (SExpr expr) env = do
     res <- evalExpr expr env
     pure (Just res, env)
 
+lookupVar str [] = undefined
+lookupVar str (env:envs) = case M.lookup str env of
+    Nothing -> lookupVar str envs
+    Just val -> val
 
 evalExpr :: Expr -> Env -> ErrorM Expr
 evalExpr x@(ENum {}) env = pure x
 evalExpr (EApply fn args) env = do
     fn' <- evalExpr fn env
-    args' <- mapM (\x -> evalExpr x env) args
+    args' <- mapM (\arg -> evalExpr arg env) args
     case fn' of
         EBuiltin str -> applyBuiltin str args' env
         n@(ENum {}) -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
+        EClosure params body closure -> do
+            let args = zip params args'
+            let env' = env {
+                envVars = M.fromList args : closure
+            }
+            evalExpr body env'
         x -> err $ "Trying to treat " ++ prettyPrint x ++ " as a function."
 evalExpr (EId str) env
     | str `elem` builtins = pure (EBuiltin str)
-    | str `M.member` envVars env = let (num,units) = envVars env M.! str in
-      pure (ENum num units)
+    | any (str `M.member`) (envVars env) = pure $ lookupVar str (envVars env)
+    | str `M.member` envDeclarations env = pure $ lookupVar str [envDeclarations env]
     | str `elem` envUnitNames env = pure (ENum 1.0 (M.singleton str 1.0))
     | otherwise = err $ "Unknown identifier or unit: " ++ str ++ "."
 evalExpr (EConvert a b) env = do
@@ -76,6 +85,8 @@ evalExpr (EConvert a b) env = do
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
 evalExpr (EBuiltin str) env = err
     "Trying to evaluate EBuiltin. This is a bug."
+evalExpr (EFn args body) env = pure $ EClosure args body (envVars env)
+evalExpr (EClosure {}) env = err "Trying to evaluate EClosure. This is a bug."
 
 validUnit :: Units -> Env -> Bool
 validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
@@ -153,14 +164,14 @@ binPrefixes = [
 
 
 addUnitDef env unitDef
-    | not (unitExists env unitDef) = env {
+    | not (unitExists env unitDef) = pure $ env {
         envUnits = unitDef : envUnits env,
         envUnitNames = unitNames unitDef ++ unitAbbrs unitDef ++ envUnitNames env,
         envUnitMap = case unitValue unitDef of
             Nothing -> envUnitMap env
             Just value -> M.fromList (map (, value) (unitNames unitDef ++ unitAbbrs unitDef)) `M.union` envUnitMap env
         }
-    | otherwise = env --TODO: in this case, tell the user that the unit wasn't actually defined
+    | otherwise = err $ "Unit already exists: " ++ show unitDef
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
