@@ -5,9 +5,9 @@ Run it by installing the [Haskell Platform](https://www.haskell.org/platform/), 
 
 It can do conversions between units of measurement:
 ```
-> 60 mph -> m/s
+> 60 mph @ m/s
 26.8224 m/s
-> lightYear -> km
+> lightYear @ km
 9.454254955488e12 km
 ```
 
@@ -15,9 +15,9 @@ Defining new units is easy:
 ```
 > unit pound/pounds(lb) = 0.45359 kg
 
-> 100 lb -> kg
+> 100 lb @ kg
 45.359 kg
-> 100 kg -> lb
+> 100 kg @ lb
 220.46341409643068 lb
 ```
 
@@ -25,7 +25,7 @@ It also supports variables:
 ```
 > lightSpeed = 299792458 m/s
 2.99792458e8 meter/second
-> lightSpeed -> mph
+> lightSpeed @ mph
 6.706166293843952e8 mph
 > lightSpeed * 1 nanosecond
 0.29979245800000004 meter
@@ -33,11 +33,11 @@ It also supports variables:
 
 It supports bits and bytes, and the corresponding prefixes:
 ```
-> 1 -> bits/byte
+> 1 @ bits/byte
 8.0 bits/byte
-> 1 MB -> bytes
+> 1 MB @ bytes
 1000000.0 bytes
-> 1 MiB -> bytes
+> 1 MiB @ bytes
 1048576.0 bytes
 ```
 
