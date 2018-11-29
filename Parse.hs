@@ -7,7 +7,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
-import Text.Parsec hiding ((<|>), many, optional, State, newline)
+import Text.Parsec hiding ((<|>), many, State)
 import Text.Parsec.Expr
 
 import Types
@@ -41,10 +41,10 @@ parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 
 
 parseExpr :: Parsec String () Expr
-parseExpr = buildExpressionParser opTable1 parseExpr'
+parseExpr = buildExpressionParser opTableWithSpaces parseExpr'
 
 parseExpr' = try parseApply <|> parseFn <|> parseExpr''
-parseExpr'' = buildExpressionParser opTable2 parseSingleTokenExpr
+parseExpr'' = buildExpressionParser opTableNoSpaces parseSingleTokenExpr
 parseSingleTokenExpr = parsePrefixOp <|> parseParens <|> parseNum <|> parseId
 parseParens = char '(' /> parseExpr </ char ')'
 parseId = EId <$> identifier
@@ -70,10 +70,10 @@ ops = [
     [("@", AssocLeft)]
     ]
 
-opTable1 = map (map $ op True) ops
-opTable2 = map (map $ op False) ops
+opTableWithSpaces = map (map $ op True) ops
+opTableNoSpaces = map (map $ op False) ops
 
-op reqSpaces (str,assoc) = binop str reqSpaces assoc
+op reqSpaces (str, assoc) = binop str reqSpaces assoc
 binop str reqSpaces = Infix (try $ do
     when reqSpaces someWhitespace
     name <- operator str False
@@ -112,7 +112,7 @@ comment = char '#' *> skipMany (noneOf "\n")
     
 integer = read . catMaybes <$> some ((Just <$> digit) <|> (char '_' *> pure Nothing))
 float = try $ do
-    a <- integer
+    a <- option 0 integer
     char '.'
     b <- integer
     pure $ read (show a ++ "." ++ show b)

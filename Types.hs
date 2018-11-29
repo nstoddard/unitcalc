@@ -73,28 +73,28 @@ prettyPrint = outputToString . pretty
 instance Pretty Expr where
     pretty (ENum num units)
         | units == M.empty = pretty num
-        | otherwise = pretty num </> prettyUnits (M.toList units)
+        | otherwise = pretty num </> prettyPrintUnits (M.toList units)
     -- This should never happen
     pretty x = pretty (show x)
 
 instance Pretty Value where
     pretty (VNum num units)
         | units == M.empty = pretty num
-        | otherwise = pretty num </> prettyUnits (M.toList units)
+        | otherwise = pretty num </> prettyPrintUnits (M.toList units)
     -- This should never happen
     pretty x = pretty (show x)
 
-prettyUnit (unit, 1) = pretty unit
-prettyUnit (unit, n) = pretty unit <//> pretty "^" <//> pretty n
+prettyPrintUnit (unit, 1) = pretty unit
+prettyPrintUnit (unit, n) = pretty unit <//> pretty "^" <//> pretty n
 
-prettyUnits units
-    | not (null pos) && length neg == 1 = P.hsep (map prettyUnit pos) <//>
-        pretty "/" <//> prettyUnit (second negate $ head neg)
-    | otherwise = P.hsep (map prettyUnit units)
+prettyPrintUnits units
+    | not (null pos) && length neg == 1 = P.hsep (map prettyPrintUnit pos) <//>
+        pretty "/" <//> prettyPrintUnit (second negate $ head neg)
+    | otherwise = P.hsep (map prettyPrintUnit units)
     where
         (pos, neg) = partition ((>0).snd) units
 
 instance Pretty Units where
     pretty units
         | M.null units = pretty "(unitless)"
-        | otherwise = prettyUnits (M.toList units)
+        | otherwise = prettyPrintUnits (M.toList units)

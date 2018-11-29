@@ -11,6 +11,7 @@ import Data.Maybe
 import Control.Arrow
 
 import Types
+import Parse
 
 
 evalStmts :: [Stmt] -> Env -> ErrorM Env
@@ -44,18 +45,16 @@ evalStmt (SExpr expr) env = do
     pure (Just res, env)
 
 lookupVar str [] = undefined
-lookupVar str (env:envs) = case M.lookup str env of
-    Nothing -> lookupVar str envs
-    Just val -> val
+lookupVar str (env:envs) = fromMaybe (lookupVar str envs) (M.lookup str env)
 
 evalExpr :: Expr -> Env -> ErrorM Value
 evalExpr (ENum num units) env = pure (VNum num units)
 evalExpr (EApply fn args) env = do
     fn' <- evalExpr fn env
-    args' <- mapM (\arg -> evalExpr arg env) args
+    args' <- mapM (`evalExpr` env) args
     case fn' of
         VBuiltin str -> applyBuiltin str args' env
-        n@(VNum {}) -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
+        n@VNum {} -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
         VClosure params body closure -> if length params /= length args'
             then err "Params and args must be the same length"
             else do
@@ -72,8 +71,8 @@ evalExpr (EId str) env
     | otherwise = err $ "Unknown identifier or unit: " ++ str ++ "."
 evalExpr (EFn args body) env = pure $ VClosure args body (envVars env)
 
-validUnit :: Units -> Env -> Bool
-validUnit units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
+validUnits :: Units -> Env -> Bool
+validUnits units env = all (`elem` envUnitNames env) (map fst $ M.toList units)
 
 toBaseUnits :: NumUnits -> Env -> NumUnits
 toBaseUnits (n, units) env = M.foldl'
@@ -164,14 +163,14 @@ unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ uni
 applyBuiltin :: String -> [Value] -> Env -> ErrorM Value
 applyBuiltin "@" [a, b] env = do
     b <- case b of
-        VNum num units -> pure (num, units)
+        VNum num units | num == 1.0 -> pure units
         x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
-    case (a, validUnit (snd b) env) of
+    case (a, validUnits b env) of
         (VNum num units, True) -> do
-            (num',units') <- convertUnits (num/fst b, units) (snd b) env
+            (num',units') <- convertUnits (num, units) b env
             pure (VNum num' units')
         (VNum num units, False) -> err $
-            "Invalid unit in convesion: " ++ prettyPrint b ++"."
+            "Invalid unit in conversion: " ++ prettyPrint b ++"."
         (x, _) -> err $
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
 applyBuiltin "+" [VNum a aUnits, VNum b bUnits] env = do
@@ -188,8 +187,20 @@ applyBuiltin "/" [VNum a aUnits, VNum b bUnits] _ = pure $ VNum (a/b) (combineUn
 applyBuiltin "^" [VNum a aUnits, VNum b bUnits] _
     | M.null bUnits = pure $ VNum (a**b) (M.map (*b) aUnits)
     | otherwise = err "Invalid use of ^"
+applyBuiltin "sin" [VNum a aUnits] _
+    | M.null aUnits = pure $ VNum (sin a) aUnits
+    | otherwise = err "'sin' only works for unitless quantities"
+applyBuiltin "cos" [VNum a aUnits] _
+    | M.null aUnits = pure $ VNum (cos a) aUnits
+    | otherwise = err "'cos' only works for unitless quantities"
+applyBuiltin "tan" [VNum a aUnits] _
+    | M.null aUnits = pure $ VNum (tan a) aUnits
+    | otherwise = err "'tan' only works for unitless quantities"
+applyBuiltin "ln" [VNum a aUnits] _
+    | M.null aUnits = pure $ VNum (log a) aUnits
+    | otherwise = err "'ln' only works for unitless quantities"
 applyBuiltin f _ _ = err $ "Invalid call to builtin function " ++
     prettyPrint f
 
--- TODO: find a way to automatically generate this
-builtins = ["@", "+", "-", "*", "/", "^"]
+builtins :: [String]
+builtins = concatMap (map fst) ops ++ ["sin", "cos", "tan", "ln"]
