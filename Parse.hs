@@ -40,13 +40,7 @@ parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 
 
 parseExpr :: Parsec String () Expr
-parseExpr = do
-    res <- buildExpressionParser opTable1 parseExpr'
-    convert <- option Nothing $ Just <$> try (whitespace *> tryString "@" />
-        parseExpr <* whitespace)
-    case convert of
-        Nothing -> pure res
-        Just units -> pure (EConvert res units)
+parseExpr = buildExpressionParser opTable1 parseExpr'
 
 parseExpr' = try parseApply <|> parseFn <|> parsePrefixOp <|> parseExpr''
 parseExpr'' = buildExpressionParser opTable2 parseSingleTokenExpr
@@ -62,7 +56,7 @@ parseFn = do
     pure $ EFn args body
 
 operatorChars = "/<>?:\\|~!@#$%^&*+-="
-reservedOps = [commentLine, commentStart, commentEnd, "\\", "->", "@"]
+reservedOps = [commentLine, commentStart, commentEnd, "\\", "->"]
 keywords = ["unit", "si-unit", "bin-unit", "exit", "load"]
 
 
@@ -160,6 +154,7 @@ identifier = backquoteIdentifier <|> (do
 --- Operators
 
 ops = [
+    [("@", AssocLeft)],
     [("^", AssocRight)],
     [("*", AssocLeft), ("/", AssocLeft)],
     [("+", AssocLeft), ("-", AssocLeft)]

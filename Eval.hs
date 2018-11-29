@@ -70,20 +70,6 @@ evalExpr (EId str) env
     | str `M.member` envDeclarations env = pure $ lookupVar str [envDeclarations env]
     | str `elem` envUnitNames env = pure (VNum 1.0 (M.singleton str 1.0))
     | otherwise = err $ "Unknown identifier or unit: " ++ str ++ "."
-evalExpr (EConvert a b) env = do
-    a' <- evalExpr a env
-    b' <- evalExpr b env
-    b' <- case b' of
-        VNum num units -> pure (num, units)
-        x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
-    case (a', validUnit (snd b') env) of
-        (VNum num units, True) -> do
-            (num',units') <- convertUnits (num/fst b', units) (snd b') env
-            pure (VNum num' units')
-        (VNum num units, False) -> err $
-            "Invalid unit in convesion: " ++ prettyPrint b ++"."
-        (x, _) -> err $
-            "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
 evalExpr (EFn args body) env = pure $ VClosure args body (envVars env)
 
 validUnit :: Units -> Env -> Bool
@@ -173,8 +159,21 @@ addUnitDef env unitDef
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
+
 -- Built-in functions and operators
 applyBuiltin :: String -> [Value] -> Env -> ErrorM Value
+applyBuiltin "@" [a, b] env = do
+    b <- case b of
+        VNum num units -> pure (num, units)
+        x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
+    case (a, validUnit (snd b) env) of
+        (VNum num units, True) -> do
+            (num',units') <- convertUnits (num/fst b, units) (snd b) env
+            pure (VNum num' units')
+        (VNum num units, False) -> err $
+            "Invalid unit in convesion: " ++ prettyPrint b ++"."
+        (x, _) -> err $
+            "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
 applyBuiltin "+" [VNum a aUnits, VNum b bUnits] env = do
     (b', bUnits') <- convertUnits (b, bUnits) aUnits env
     if aUnits == bUnits' then pure (VNum (a+b') aUnits)
@@ -193,4 +192,4 @@ applyBuiltin f _ _ = err $ "Invalid call to builtin function " ++
     prettyPrint f
 
 -- TODO: find a way to automatically generate this
-builtins = ["+", "-", "*", "/", "^"]
+builtins = ["@", "+", "-", "*", "/", "^"]

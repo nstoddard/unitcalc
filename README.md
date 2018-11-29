@@ -61,7 +61,7 @@ These can only be used in the REPL, not in a file.
 Self-explanatory.
 
 `> load <filename>`  
-Loads the file and runs every line in it.
+Loads a file and runs every line in it.
 
 
 ### Notes
@@ -75,6 +75,15 @@ Operator precedence is a bit strange compared to most languages. It matters whet
 20.0
 ```
 
-There's three commands for defining units: `unit`, `si-unit`, and `bin-unit`. They have the same syntax, but the difference is that `si-unit` automatically generates versions of the unit with SI prefixes, and `bin-unit` also generates binary prefixes. For instance, `si-unit meter/meters(m)` will automatically define the units `centimeter`, `cm`, `kilometer`, `km`, etc.
+Operator precedence works this way so that expressions like the following work as expected:
+
+```
+> 2 m^2
+2.0 m^2.0
+```
+
+If operator prededence worked as in most languages, this would unexpectedly be parsed as `(2 m)^2` and return `4.0 m^2.0`.
+
+There's three commands for defining units: `unit`, `si-unit`, and `bin-unit`. They have the same syntax, but `si-unit` automatically generates versions of the unit with SI prefixes, and `bin-unit` additionally generates binary prefixes. For instance, `si-unit meter/meters(m)` will automatically define the units `centimeter`, `cm`, `kilometer`, `km`, etc.
 
 Units and variables are case-sensitive. For instance, `5 KM` won't work.

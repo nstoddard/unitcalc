@@ -19,7 +19,6 @@ data Expr =
     ENum Double Units | -- A number, with units
     EApply Expr [Expr] | -- Application of a function or operator
     EId String | -- An identifier
-    EConvert Expr Expr | -- A conversion between units
     EFn [String] Expr -- A function
     deriving (Show)
 
