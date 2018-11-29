@@ -1,4 +1,4 @@
-// The si- prefix automatically generates prefixes like kilo-
+# The si- prefix automatically generates prefixes like kilo-
 si-unit meter/meters(m)
 unit inch/inches(in) = 2.54 cm
 unit foot/feet(ft) = 12 in
@@ -15,8 +15,8 @@ unit decade/decades = 10 years
 unit century/centuries = 100 years
 unit millenium/millenia = 1000 years
 
-/* The kilogram is technically the SI base unit, not the gram, but it doesn't matter here
-   because there's no automatic conversion to base units. */
+# The kilogram is technically the SI base unit, not the gram, but it doesn't matter here
+# because there's no automatic conversion to base units.
 si-unit gram/grams(g)
 
 si-unit ampere/amperes/amp/amps(A)
@@ -59,9 +59,8 @@ earthGravity = 9.8 m/s^2
 pi = 3.141592653589793238462643383279
 e = 2.718281828459045235360287471352
 
-/* This file doesn't include temperature units because conversions between
-   they require addition, which isn't supported in unit conversions.
-*/
+# This file doesn't include temperature units because conversions between
+# they require addition, which isn't supported in unit conversions.
 
 bin-unit bit/bits(b)
 bin-unit byte/bytes(B) = 8 bits

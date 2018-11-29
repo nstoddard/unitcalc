@@ -41,7 +41,6 @@ mathTests = TestList
 conversionTests = TestList
   [ TestCase (assertEqualExprs "2 m @ cm" "200 cm")
   , TestCase (assertEqualExprs "2 m^2 @ cm^2" "20000 cm^2")
-  , TestCase (assertEqualExprs "((1 ft) @ inches) + (1 inch)" "(1 ft) @ inches + (1 inch)")
   ]
 
 functions = TestList
