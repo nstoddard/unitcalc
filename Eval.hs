@@ -56,7 +56,7 @@ evalExpr (EApply fn args) env = do
         VBuiltin str -> applyBuiltin str args' env
         n@VNum {} -> foldM (\a b -> applyBuiltin "*" [a,b] env) n args'
         VClosure params body closure -> if length params /= length args'
-            then err "Params and args must be the same length"
+            then err "Params and args must be the same length."
             else do
                 let args = zip params args'
                 let env' = env {
@@ -111,38 +111,38 @@ addSIPrefixes unitDef = case unitType unitDef of
             unitValue = Just (mul, M.singleton (head $ unitNames unitDef) 1.0)
         }
 
-siPrefixes = [
-    ("yotta", "Y", 1000**8),
-    ("zetta", "Z", 1000**7),
-    ("exa"  , "E", 1000**6),
-    ("peta" , "P", 1000**5),
-    ("tera" , "T", 1000**4),
-    ("giga" , "G", 1000**3),
-    ("mega" , "M", 1000**2),
-    ("kilo" , "k", 1000**1),
-    ("hecto", "h", 100),
-    ("deca" , "da", 10),
+siPrefixes =
+    [ ("yotta", "Y", 1000**8)
+    , ("zetta", "Z", 1000**7)
+    , ("exa"  , "E", 1000**6)
+    , ("peta" , "P", 1000**5)
+    , ("tera" , "T", 1000**4)
+    , ("giga" , "G", 1000**3)
+    , ("mega" , "M", 1000**2)
+    , ("kilo" , "k", 1000**1)
+    , ("hecto", "h", 100)
+    , ("deca" , "da", 10)
 
-    ("deci" , "d", 0.1),
-    ("centi", "c", 0.01),
-    ("milli", "m", 1000**(-1)),
-    ("micro", "mu",1000**(-2)),
-    ("nano" , "n", 1000**(-3)),
-    ("pico" , "p", 1000**(-4)),
-    ("femto", "f", 1000**(-5)),
-    ("atto" , "a", 1000**(-6)),
-    ("zepto", "z", 1000**(-7)),
-    ("yocto", "y", 1000**(-8))
+    , ("deci" , "d", 0.1)
+    , ("centi", "c", 0.01)
+    , ("milli", "m", 1000**(-1))
+    , ("micro", "mu",1000**(-2))
+    , ("nano" , "n", 1000**(-3))
+    , ("pico" , "p", 1000**(-4))
+    , ("femto", "f", 1000**(-5))
+    , ("atto" , "a", 1000**(-6))
+    , ("zepto", "z", 1000**(-7))
+    , ("yocto", "y", 1000**(-8))
     ]
-binPrefixes = [
-    ("yobi", "Yi", 1024**8),
-    ("zebi", "Zi", 1024**7),
-    ("exbi", "Ei", 1024**6),
-    ("pebi", "Pi", 1024**5),
-    ("tebi", "Ti", 1024**4),
-    ("gibi", "Gi", 1024**3),
-    ("mebi", "Mi", 1024**2),
-    ("kibi", "Ki", 1024**1)
+binPrefixes =
+    [ ("yobi", "Yi", 1024**8)
+    , ("zebi", "Zi", 1024**7)
+    , ("exbi", "Ei", 1024**6)
+    , ("pebi", "Pi", 1024**5)
+    , ("tebi", "Ti", 1024**4)
+    , ("gibi", "Gi", 1024**3)
+    , ("mebi", "Mi", 1024**2)
+    , ("kibi", "Ki", 1024**1)
     ]
 
 
@@ -154,7 +154,7 @@ addUnitDef env unitDef
             Nothing -> envUnitMap env
             Just value -> M.fromList (map (, value) (unitNames unitDef ++ unitAbbrs unitDef)) `M.union` envUnitMap env
         }
-    | otherwise = err $ "Unit already exists: " ++ show unitDef
+    | otherwise = err $ "Unit already exists: " ++ (head $ unitNames unitDef) ++ "."
 
 unitExists env unitDef = any (`elem` envUnitNames env) (unitNames unitDef ++ unitAbbrs unitDef)
 
@@ -164,13 +164,13 @@ applyBuiltin :: String -> [Value] -> Env -> ErrorM Value
 applyBuiltin "@" [a, b] env = do
     b <- case b of
         VNum num units | num == 1.0 -> pure units
-        x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x
+        x -> err $ "Invalid conversion; can't convert to " ++ prettyPrint x ++ "."
     case (a, validUnits b env) of
         (VNum num units, True) -> do
             (num',units') <- convertUnits (num, units) b env
             pure (VNum num' units')
         (VNum num units, False) -> err $
-            "Invalid unit in conversion: " ++ prettyPrint b ++"."
+            "Invalid unit in conversion: " ++ prettyPrint b ++ "."
         (x, _) -> err $
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
 applyBuiltin "+" [VNum a aUnits, VNum b bUnits] env = do

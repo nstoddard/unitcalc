@@ -24,11 +24,11 @@ Defining new units is easy:
 It also supports variables:
 ```
 > lightSpeed = 299792458 m/s
-2.99792458e8 meter/second
+2.99792458e8 m/s
 > lightSpeed @ mph
 6.706166293843952e8 mph
-> lightSpeed * 1 nanosecond
-0.29979245800000004 meter
+> lightSpeed * 1 nanosecond @ meters
+0.29979245800000004 meters
 ```
 
 It supports bits and bytes, and the corresponding prefixes:
