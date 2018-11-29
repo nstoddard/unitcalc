@@ -42,14 +42,14 @@ parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
 parseExpr :: Parsec String () Expr
 parseExpr = buildExpressionParser opTable1 parseExpr'
 
-parseExpr' = try parseApply <|> parseFn <|> parsePrefixOp <|> parseExpr''
+parseExpr' = try parseApply <|> parseFn <|> parseExpr''
 parseExpr'' = buildExpressionParser opTable2 parseSingleTokenExpr
-parseSingleTokenExpr = parseParens <|> parseNum <|> parseId
+parseSingleTokenExpr = parsePrefixOp <|> parseParens <|> parseNum <|> parseId
 parseParens = char '(' /> parseExpr </ char ')'
 parseId = EId <$> identifier
 parseNum = ENum <$> (float <|> fromIntegral <$> decimal) <*> pure M.empty
 parseApply = EApply <$> parseExpr'' <*> some (try $ whitespace *> parseExpr'')
-parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseExpr)
+parsePrefixOp = EApply <$> (EId <$> prefixOperator) <*> ((:[]) <$> parseSingleTokenExpr)
 parseFn = do
     args <- tryString "\\" /> sepBy1 identifier (char ',' *> whitespace) <* whitespace
     body <- tryString "->" /> parseExpr

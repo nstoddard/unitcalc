@@ -34,6 +34,8 @@ assertEqualExprs a b = do
 mathTests = TestList
   [ TestCase (assertEqualExprs "2+2" "4")
   , TestCase (assertEqualExprs "2+3 * 4" "20")
+  , TestCase (assertEqualExprs "5^-1" "5 ^ -1")
+  , TestCase (assertEqualExprs "5^-1 m" "5^(-1) m")
   ]
 
 conversionTests = TestList

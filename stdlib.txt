@@ -42,6 +42,7 @@ si-unit parsec/parsecs(pc) = 3.08567758149137*10^16 m
 unit astronomicalUnit/astronomicalUnits(AU) = 1.4960*10^11 m
 
 unit pound/pounds(lb/lbs) = 0.45359 kg
+unit oz = 1 lb / 16
 
 unit mph = mi/hr
 unit kph = km/hr
@@ -56,6 +57,7 @@ si-unit electronvolt/electronvolts(eV) = 1.6*10^(-19) J
 earthGravity = 9.8 m/s^2
 
 pi = 3.141592653589793238462643383279
+e = 2.718281828459045235360287471352
 
 /* This file doesn't include temperature units because conversions between
    they require addition, which isn't supported in unit conversions.
@@ -63,3 +65,5 @@ pi = 3.141592653589793238462643383279
 
 bin-unit bit/bits(b)
 bin-unit byte/bytes(B) = 8 bits
+
+unit dollar/dollars
