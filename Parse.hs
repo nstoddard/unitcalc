@@ -12,16 +12,13 @@ import Text.Parsec.Expr
 
 import Types
 
+parseInput :: String -> String -> Parsec String () a -> ErrorM a
+parseInput srcName input parser = case parse (parseWholeInput parser) srcName input of
+    Left err_ -> err ("Syntax error " ++ show err_)
+    Right expr -> pure expr
 
 parseReplCmd = whitespace *> (parseLoad <|> (RStmt <$> parseStmt)) <* whitespace
 parseLoad = RLoad <$> (tryString "load" /> some (satisfy (not . isSpace)))
-
-
-parseInput :: String -> String -> Parsec String () a -> ErrorM a
-parseInput srcName input parser = case parse (parseWholeInput parser) srcName input of
-        Left err_ -> err ("Syntax error " ++ show err_)
-        Right expr -> pure expr
-
 
 parseStmts = anyWhitespace *> many (parseStmt <* anyWhitespace)
 
@@ -38,7 +35,6 @@ parseUnitDef = do
     value <- option Nothing $ Just <$> (char '=' /> parseExpr <* whitespace)
     pure $ SUnitDef utype names abbrs value
 parseDef = SDef <$> identifier <*> (whitespace *> char '=' /> parseExpr)
-
 
 parseExpr :: Parsec String () Expr
 parseExpr = buildExpressionParser opTableWithSpaces parseExpr'
