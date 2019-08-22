@@ -41,11 +41,6 @@ main = do
         Left err -> putStrLn err
         Right env -> void $ runInputT (Settings noCompletion (Just historyFilename) True) $ repl env
 
-
--- Pretty-prints a string by splitting it into words so they can be properly 
--- split across lines
-prettyString = P.fillSep . map pretty . words
-
 repl :: Env -> InputT IO Env
 repl env = do
     input <- replGetInput Nothing

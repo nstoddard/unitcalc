@@ -105,11 +105,12 @@ someWhitespace = whitespace1' " \t"
 whitespace' chars = skipMany (void (oneOf chars) <|> comment)
 whitespace1' chars = skipMany1 (void (oneOf chars) <|> comment)
 comment = char '#' *> skipMany (noneOf "\n")
-    
-integer = read . catMaybes <$> some ((Just <$> digit) <|> (char '_' *> pure Nothing))
+
+integer' = catMaybes <$> some ((Just <$> digit) <|> (char '_' *> pure Nothing))
+integer = read <$> integer'
 float = try $ do
-    a <- option 0 integer
+    a <- option "0" integer'
     char '.'
-    b <- integer
-    pure $ read (show a ++ "." ++ show b)
+    b <- integer'
+    pure $ read (a ++ "." ++ b)
 identifier = (:) <$> letter <*> many alphaNum

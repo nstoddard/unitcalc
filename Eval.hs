@@ -169,7 +169,7 @@ applyBuiltin "@" [a, b] env = do
         (VNum num units, True) -> do
             (num',units') <- convertUnits (num, units) b env
             pure (VNum num' units')
-        (VNum num units, False) -> err $
+        (_, False) -> err $
             "Invalid unit in conversion: " ++ prettyPrint b ++ "."
         (x, _) -> err $
             "Invalid conversion: can't convert " ++ prettyPrint x ++ "."
